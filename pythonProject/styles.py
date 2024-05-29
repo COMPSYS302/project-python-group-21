@@ -42,8 +42,8 @@ class ActivityStyles:
                         font-size: 36px; 
                         color: white;     
                         font-weight: bold;
-                        margin-top: 40px;
-                        margin-bottom: 40px;
+                        margin-top: 20px;
+                        margin-bottom: 20px;
 
                     }
         """
@@ -70,3 +70,18 @@ class ActivityStyles:
                         background-color: #545454;
                     }
                 """
+
+        self.loading_bar_style = """
+                    QProgressBar {
+                        border-style: solid;
+                        color: white;
+                        font: bold 12px;
+                        border-width: 2px;
+                        border-radius: 5px;
+                        border-color: white;
+                    }
+                    
+                    QProgressBar::chunk {
+                        background : #3D0289;
+                    }
+        """

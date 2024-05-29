@@ -14,9 +14,13 @@ class HomeWindow(qtw.QWidget):
     def openWhenEnter(self):
         self.window = ActivityOptionsWindow(self)
         self.hide()
+
+    # ------------------------------------------------
+
     def __init__(self):
         # super definition is for QWidget class
         super().__init__()
+
 
         # Adding a title
         self.window = None
@@ -66,6 +70,10 @@ class HomeWindow(qtw.QWidget):
         main_layout.addWidget(self.logo_label, alignment=Qt.AlignCenter)
         main_layout.addWidget(self.enter_button, alignment=Qt.AlignCenter)
 
+        # qtRectangle = self.frameGeometry()
+        # centerPoint = qtw.QDesktopWidget().availableGeometry().center()
+        # qtRectangle.moveCenter(centerPoint)
+        # self.move(qtRectangle.topLeft())
         self.show()
 
 

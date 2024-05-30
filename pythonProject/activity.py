@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
+import time
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 
 from pythonProject.train import TrainingWindow
 from styles import ActivityStyles
@@ -12,6 +13,7 @@ activitystyles = ActivityStyles()
 # Define a constant for the number of images to load per batch
 IMAGES_BATCH_SIZE = 100
 
+
 # Created 'DataLoaderThread' class which handles the data loading and
 # image conversion in a background thread.
 class DataLoaderThread(QThread):
@@ -19,12 +21,20 @@ class DataLoaderThread(QThread):
     progress = pyqtSignal(int)
     # Signal to indicate that the data loading is complete and to send the loaded images
     data_loaded = pyqtSignal(list)
+    # Signal to indicate the estimated time remaining
+    time_remaining = pyqtSignal(str)
 
     def __init__(self, filepath):
         super().__init__()
         self.filepath = filepath  # Path to the CSV file to be loaded
+        self.start_time = None
+        self.mutex = QMutex()
+        self.stopped = False
 
     def run(self):
+        # Record the start time
+        self.start_time = time.time()
+
         # Read the CSV file into a DataFrame
         data = pd.read_csv(self.filepath)
         images = []  # List to hold the QPixmap images along with their labels
@@ -32,6 +42,10 @@ class DataLoaderThread(QThread):
 
         # Loop through each row in the DataFrame
         for i in range(progress_num):
+            with QMutexLocker(self.mutex):
+                if self.stopped:
+                    break
+
             label = data.iloc[i, 0]  # Extract the label
             pixels = data.iloc[i, 1:].values  # Extract pixel values from the row
             # Convert pixel values to a NumPy array and reshape to a 28x28 image
@@ -43,8 +57,21 @@ class DataLoaderThread(QThread):
             # Emit the progress signal with the percentage completed
             self.progress.emit(int((i + 1) / progress_num * 100))
 
-        # Emit the data_loaded signal with the list of QPixmap images
-        self.data_loaded.emit(images)
+            # Calculate elapsed time and estimate remaining time
+            elapsed_time = time.time() - self.start_time
+            if i > 0:  # Avoid division by zero
+                remaining_time = elapsed_time / (i + 1) * (progress_num - i - 1)
+                minutes, seconds = divmod(remaining_time, 60)
+                self.time_remaining.emit(f"{int(minutes)} min {int(seconds)} sec left")
+
+        # Emit the data_loaded signal with the list of QPixmap images if not stopped
+        if not self.stopped:
+            self.data_loaded.emit(images)
+
+    def stop(self):
+        with QMutexLocker(self.mutex):
+            self.stopped = True
+
 
 class ActivityOptionsWindow(qtw.QWidget):
 
@@ -64,13 +91,20 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.loading_thread = DataLoaderThread(fname[0])
             self.loading_thread.progress.connect(self.updateProgressBar)
             self.loading_thread.data_loaded.connect(self.onDataLoaded)
+            self.loading_thread.time_remaining.connect(self.updateTimeRemaining)
             self.loading_thread.start()
             self.loadingProgressBar.setRange(0, 100)
+            self.loadingProgressBar.setAlignment(Qt.AlignCenter)  # Center align the text
             self.loadingProgressBar.show()
+            self.stopButton.show()
 
     # Method to update the progress bar
     def updateProgressBar(self, value):
         self.loadingProgressBar.setValue(value)
+
+    # Method to update the remaining time display
+    def updateTimeRemaining(self, time_left):
+        self.loadingProgressBar.setFormat(f"%p% - {time_left}")
 
     # Method to handle data once loaded
     def onDataLoaded(self, images):
@@ -78,7 +112,15 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.filtered_images = images[:IMAGES_BATCH_SIZE]  # Limit the number of displayed images initially
         self.displayed_images_count = len(self.filtered_images)
         self.loadingProgressBar.hide()
+        self.stopButton.hide()
         qtw.QMessageBox.information(self, "Success!", "Data loaded successfully.")
+
+    # Method to stop the data loading
+    def stopLoading(self):
+        if hasattr(self, 'loading_thread'):
+            self.loading_thread.stop()
+            self.loadingProgressBar.hide()
+            self.stopButton.hide()
 
     # Method to view the images after loading and converting the data into images
     def viewConvertedImages(self):
@@ -164,7 +206,8 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
+                                                self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):
@@ -209,6 +252,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.view_data_button = qtw.QPushButton("View Data")
         self.train_button = qtw.QPushButton("Train")
         self.test_button = qtw.QPushButton("Test")
+
         # Buttons layout / style
         self.load_data_button.setStyleSheet(activitystyles.button_style)
         self.view_data_button.setStyleSheet(activitystyles.button_style)
@@ -229,8 +273,21 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.loadingProgressBar = qtw.QProgressBar()
         self.loadingProgressBar.setStyleSheet(activitystyles.loading_bar_style)
         self.loadingProgressBar.hide()
-        parent_layout.addWidget(self.loadingProgressBar, alignment=Qt.AlignTop)
+
+        # Add stop button below the progress bar
+        self.stopButton = qtw.QPushButton("Stop")
+        self.stopButton.setStyleSheet(activitystyles.button_style)
+        self.stopButton.clicked.connect(self.stopLoading)
+        self.stopButton.hide()
+
+        # Center the progress bar and stop button
+        progress_layout = qtw.QVBoxLayout()
+        progress_layout.addWidget(self.loadingProgressBar)
+        progress_layout.addWidget(self.stopButton, alignment=Qt.AlignCenter)
+
+        parent_layout.addLayout(progress_layout)
         parent_layout.addStretch()
+
         self.load_data_button.clicked.connect(self.loadFile)
         self.view_data_button.clicked.connect(self.viewConvertedImages)
         self.show()

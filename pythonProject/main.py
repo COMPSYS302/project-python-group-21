@@ -16,11 +16,9 @@ class HomeWindow(qtw.QWidget):
         self.hide()
 
     # ------------------------------------------------
-
     def __init__(self):
         # super definition is for QWidget class
         super().__init__()
-
 
         # Adding a title
         self.window = None
@@ -47,8 +45,7 @@ class HomeWindow(qtw.QWidget):
         self.logo_label.setPixmap(self.pixmap)
 
         # Optional, resize label to image size
-        self.logo_label.resize(self.pixmap.width(),
-                               self.pixmap.height())
+        self.logo_label.resize(self.pixmap.width(), self.pixmap.height())
 
         # Creating label for the text
         self.welcome_text_label = qtw.QLabel("Welcome to", self)

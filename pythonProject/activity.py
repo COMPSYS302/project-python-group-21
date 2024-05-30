@@ -1,14 +1,45 @@
-import time
-
 import pandas as pd
 import numpy as np
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
+
+#  Created 'DataLoaderThread' class which handles the data loading and
+#  image conversion in a background thread.
+class DataLoaderThread(QThread):
+    # Signal to indicate the progress of data loading
+    progress = pyqtSignal(int)
+    # Signal to indicate that the data loading is complete and to send the loaded images
+    data_loaded = pyqtSignal(list)
+
+    def __init__(self, filepath):
+        super().__init__()
+        self.filepath = filepath  # Path to the CSV file to be loaded
+
+    def run(self):
+        # Read the CSV file into a DataFrame
+        data = pd.read_csv(self.filepath)
+        images = []  # List to hold the QPixmap images
+        progress_num = len(data)  # Total number of rows in the DataFrame
+
+        # Loop through each row in the DataFrame
+        for i in range(progress_num):
+            pixels = data.iloc[i, 1:].values  # Extract pixel values from the row
+            # Convert pixel values to a NumPy array and reshape to a 28x28 image
+            image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
+            # Create a QImage from the NumPy array
+            qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
+            # Convert QImage to QPixmap and add to the list
+            images.append(QPixmap.fromImage(qimage))
+            # Emit the progress signal with the percentage completed
+            self.progress.emit(int((i + 1) / progress_num * 100))
+
+        # Emit the data_loaded signal with the list of QPixmap images
+        self.data_loaded.emit(images)
 
 
 class ActivityOptionsWindow(qtw.QWidget):
@@ -19,35 +50,23 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     # method to load file
     def loadFile(self):
-        fname = qtw.QFileDialog.getOpenFileName(self, "Open File", "",
-                                                "CSV Files (*.csv);;All Files (*)")
+        fname = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
         if fname[0]:
-            try:
-                data = pd.read_csv(fname[0])
-                self.convertDataToImages(data)
-                success_message = qtw.QMessageBox()
-                success_message.information(self, "Success!", "Data loaded successfully.")
-            except Exception as e:
-                qtw.QMessageBox.critical(self, "Error", f"Could not load file: {e}")
+            self.loading_thread = DataLoaderThread(fname[0])
+            self.loading_thread.progress.connect(self.updateProgressBar)
+            self.loading_thread.data_loaded.connect(self.onDataLoaded)
+            self.loading_thread.start()
+            self.loadingProgressBar.setRange(0, 100)
+            self.loadingProgressBar.show()
 
-    # ===========================================================================================
-    # method to convert CSV data to images
-    def convertDataToImages(self, data):
-        self.data = data
-        self.images = []
-        self.progressNum = len(data)
-        self.loadingProgressBar.setRange(0, self.progressNum)
-        self.loadingProgressBar.show()
+    def updateProgressBar(self, value):
+        self.loadingProgressBar.setValue(value)
 
-        for i in range (len(data)):
-            self.loadingProgressBar.setValue(i+1)
-            pixels = data.iloc[i,1:].values
-            image_array = np.array(pixels, dtype=np.uint8).reshape((28,28))
-            qimage = QImage(image_array.data, 28,28, QImage.Format_Grayscale8)
-            self.images.append(QPixmap.fromImage(qimage))
+    def onDataLoaded(self, images):
+        self.images = images
         self.loadingProgressBar.hide()
+        qtw.QMessageBox.information(self, "Success!", "Data loaded successfully.")
 
-    # ============================================================================================
     # method to view the images after loading and converting the data into images
     def viewConvertedImages(self):
         # Showing a warning message if the user has not loaded any data
@@ -83,7 +102,6 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.scroll_area = scroll_area
         self.show()
 
-    # ============================================================================================
     # class initialisation method
     def __init__(self, previouswindow):
         super().__init__()
@@ -117,7 +135,6 @@ class ActivityOptionsWindow(qtw.QWidget):
         parent_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         parent_layout.addWidget(self.question_text, alignment=Qt.AlignTop)
 
-
         horizontal_grid = qtw.QGridLayout()
 
         self.load_data_button = qtw.QPushButton("Load Data")
@@ -147,5 +164,3 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.load_data_button.clicked.connect(self.loadFile)
         self.view_data_button.clicked.connect(self.viewConvertedImages)
         self.show()
-
-

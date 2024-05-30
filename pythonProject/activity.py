@@ -41,6 +41,13 @@ class DataLoaderThread(QThread):
         # Emit the data_loaded signal with the list of QPixmap images
         self.data_loaded.emit(images)
 
+class CenterDropdownDelegate(qtw.QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super(CenterDropdownDelegate, self).__init__(parent)
+
+    def initStyleOption(self, option, index):
+        super(CenterDropdownDelegate, self).initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignCenter
 
 class ActivityOptionsWindow(qtw.QWidget):
 
@@ -134,6 +141,12 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.question_text.setStyleSheet(activitystyles.text_styles)
         parent_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         parent_layout.addWidget(self.question_text, alignment=Qt.AlignTop)
+
+        self.cnn_dropdown = qtw.QComboBox()
+        self.cnn_dropdown.addItems(["-- Select Model --", "Sign-SYS CNN", "Inception V-3", "AlexNet"])
+        self.cnn_dropdown.setStyleSheet(activitystyles.combobox_style)
+        self.cnn_dropdown.setItemDelegate(CenterDropdownDelegate(self))
+        parent_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignCenter)
 
         horizontal_grid = qtw.QGridLayout()
 

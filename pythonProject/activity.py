@@ -9,12 +9,11 @@ from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
 
-# Define a constant for the maximum number of images to load initially and per batch
-MAX_IMAGES_DISPLAY = 100
-IMAGES_BATCH_SIZE = 20
+# Define a constant for the number of images to load per batch
+IMAGES_BATCH_SIZE = 100
 
-#  Created 'DataLoaderThread' class which handles the data loading and
-#  image conversion in a background thread.
+# Created 'DataLoaderThread' class which handles the data loading and
+# image conversion in a background thread.
 class DataLoaderThread(QThread):
     # Signal to indicate the progress of data loading
     progress = pyqtSignal(int)
@@ -76,7 +75,7 @@ class ActivityOptionsWindow(qtw.QWidget):
     # Method to handle data once loaded
     def onDataLoaded(self, images):
         self.images = images
-        self.filtered_images = images[:MAX_IMAGES_DISPLAY]  # Limit the number of displayed images initially
+        self.filtered_images = images[:IMAGES_BATCH_SIZE]  # Limit the number of displayed images initially
         self.displayed_images_count = len(self.filtered_images)
         self.loadingProgressBar.hide()
         qtw.QMessageBox.information(self, "Success!", "Data loaded successfully.")
@@ -129,7 +128,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         if query.isdigit():
             label = int(query)
             if 0 <= label <= 25:
-                self.filtered_images = [img for img in self.images if img[0] == label][:MAX_IMAGES_DISPLAY]
+                self.filtered_images = [img for img in self.images if img[0] == label]
                 self.displayed_images_count = len(self.filtered_images)
             else:
                 self.filtered_images = []
@@ -139,7 +138,7 @@ class ActivityOptionsWindow(qtw.QWidget):
                 self.filtered_images = []
                 qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 25.")
             else:
-                self.filtered_images = self.images[:MAX_IMAGES_DISPLAY]
+                self.filtered_images = self.images[:IMAGES_BATCH_SIZE]
                 self.displayed_images_count = len(self.filtered_images)
 
         # Update the image display
@@ -165,7 +164,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, i // 10, i % 10)  # 10 images per row
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):

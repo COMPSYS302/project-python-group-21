@@ -13,6 +13,19 @@ activitystyles = ActivityStyles()
 # Define a constant for the number of images to load per batch
 IMAGES_BATCH_SIZE = 100
 
+# Define a dictionary to remap the labels
+label_remap = {
+    26: 35,
+    27: 26,
+    28: 33,
+    29: 32,
+    30: 27,
+    31: 34,
+    32: 30,
+    33: 29,
+    34: 28,
+    35: 31
+}
 
 # Created 'DataLoaderThread' class which handles the data loading and
 # image conversion in a background thread.
@@ -47,6 +60,8 @@ class DataLoaderThread(QThread):
                     break
 
             label = data.iloc[i, 0]  # Extract the label
+            label = label_remap.get(label, label)  # Remap the label using the dictionary
+
             pixels = data.iloc[i, 1:].values  # Extract pixel values from the row
             # Convert pixel values to a NumPy array and reshape to a 28x28 image
             image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
@@ -169,16 +184,16 @@ class ActivityOptionsWindow(qtw.QWidget):
         query = self.search_bar.text()
         if query.isdigit():
             label = int(query)
-            if 0 <= label <= 25:
+            if 0 <= label <= 35:
                 self.filtered_images = [img for img in self.images if img[0] == label]
                 self.displayed_images_count = len(self.filtered_images)
             else:
                 self.filtered_images = []
-                qtw.QMessageBox.warning(self, "Error", "Please enter a label between 0 and 25.")
+                qtw.QMessageBox.warning(self, "Error", "Please enter a label between 0 and 35.")
         else:
             if query:
                 self.filtered_images = []
-                qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 25.")
+                qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 35.")
             else:
                 self.filtered_images = self.images[:IMAGES_BATCH_SIZE]
                 self.displayed_images_count = len(self.filtered_images)
@@ -189,7 +204,7 @@ class ActivityOptionsWindow(qtw.QWidget):
     # Method to load more images when scrolling
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
-            next_images = self.images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            next_images = self.filtered_images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, append=True)
@@ -206,8 +221,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
-                                                self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):

@@ -15,6 +15,10 @@ class HomeWindow(qtw.QWidget):
         self.window = ActivityOptionsWindow(self)
         self.hide()
 
+    def openActivityWindow(self):
+        self.window = ActivityOptionsWindow(self)
+        self.window.show()
+        self.close()
     # ------------------------------------------------
     def __init__(self):
         # super definition is for QWidget class

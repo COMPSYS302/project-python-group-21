@@ -1,3 +1,4 @@
+# Styles for the Home Window
 class HomeWindowStyles:
     def __init__(self):
         self.text_style = """
@@ -35,6 +36,7 @@ class HomeWindowStyles:
             }
         """
 
+# Styles for the Activity Window
 class ActivityStyles:
     def __init__(self):
         self.text_styles = """
@@ -86,40 +88,50 @@ class ActivityStyles:
                     }
                 """
 
+# Styles for the Training Window
+class TrainingStyles:
+    def __init__(self):
+        self.title_styles = """
+                            QLabel {
+                                font-size: 30px; 
+                                color: white;     
+                                font-weight: bold;
+                            }
+                        """
         self.combobox_style = """
-                    QComboBox {
-                        background-color: white;
-                        color: #3D0289;
-                        border-style: inset;
-                        border-width: 2px;
-                        border-radius: 10px;
-                        border-color: beige;
-                        font: bold 14px;
-                        min-width: 10em;
-                        padding: 5px;
-                    }
+                            QComboBox {
+                                background-color: white;
+                                color: #3D0289;
+                                border-style: inset;
+                                border-width: 2px;
+                                border-radius: 10px;
+                                border-color: beige;
+                                font: bold 14px;
+                                min-width: 10em;
+                                padding: 5px;
+                            }
 
-                    QComboBox::drop-down {
-                        subcontrol-origin: padding;
-                        subcontrol-position: top right;
-                        width: 20px;
-                        border-left-width: 1px;
-                        border-left-color: beige;
-                        border-left-style: solid;
-                        border-top-right-radius: 3px;
-                        border-bottom-right-radius: 3px;
-                    }
+                            QComboBox::drop-down {
+                                subcontrol-origin: padding;
+                                subcontrol-position: top right;
+                                width: 20px;
+                                border-left-width: 1px;
+                                border-left-color: beige;
+                                border-left-style: solid;
+                                border-top-right-radius: 3px;
+                                border-bottom-right-radius: 3px;
+                            }
 
-                    QComboBox::down-arrow {
-                        image: url(dropdown.png);
-                        width: 10px;
-                        height: 10px;
-                    }
-                    
-                    QComboBox QAbstractItemView {
-                        background: white;
-                        color: #3D0289;
-                        selection-background-color: #3D0289;
-                        selection-color: white;
-                    }
-                """
+                            QComboBox::down-arrow {
+                                image: url(dropdown.png);
+                                width: 10px;
+                                height: 10px;
+                            }
+
+                            QComboBox QAbstractItemView {
+                                background: white;
+                                color: #3D0289;
+                                selection-background-color: #3D0289;
+                                selection-color: white;
+                            }
+                        """

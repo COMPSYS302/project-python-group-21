@@ -4,6 +4,7 @@ import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
+from pythonProject.train import TrainingWindow
 from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
@@ -46,19 +47,16 @@ class DataLoaderThread(QThread):
         # Emit the data_loaded signal with the list of QPixmap images
         self.data_loaded.emit(images)
 
-class CenterDropdownDelegate(qtw.QStyledItemDelegate):
-    def __init__(self, parent=None):
-        super(CenterDropdownDelegate, self).__init__(parent)
-
-    def initStyleOption(self, option, index):
-        super(CenterDropdownDelegate, self).initStyleOption(option, index)
-        option.displayAlignment = Qt.AlignCenter
-
 class ActivityOptionsWindow(qtw.QWidget):
 
     def returnToHome(self):
         self.prevWindow.show()
         self.close()
+
+    def openTrainingWindow(self):
+        self.training_window = TrainingWindow(self)
+        self.training_window.show()
+        self.hide()
 
     # Method to load file
     def loadFile(self):
@@ -194,6 +192,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.setLayout(parent_layout)
 
+        # Back button for activity window
         self.back_button = qtw.QPushButton("Return")
         self.back_button.setStyleSheet(activitystyles.button_style)
         self.back_button.clicked.connect(self.returnToHome)
@@ -204,23 +203,20 @@ class ActivityOptionsWindow(qtw.QWidget):
         parent_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         parent_layout.addWidget(self.question_text, alignment=Qt.AlignTop)
 
-        self.cnn_dropdown = qtw.QComboBox()
-        self.cnn_dropdown.addItems(["-- Select Model --", "Sign-SYS CNN", "Inception V-3", "AlexNet"])
-        self.cnn_dropdown.setStyleSheet(activitystyles.combobox_style)
-        self.cnn_dropdown.setItemDelegate(CenterDropdownDelegate(self))
-        parent_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignCenter)
-
         horizontal_grid = qtw.QGridLayout()
 
+        # Buttons Initialization
         self.load_data_button = qtw.QPushButton("Load Data")
         self.view_data_button = qtw.QPushButton("View Data")
         self.train_button = qtw.QPushButton("Train")
         self.test_button = qtw.QPushButton("Test")
-
+        # Buttons layout / style
         self.load_data_button.setStyleSheet(activitystyles.button_style)
         self.view_data_button.setStyleSheet(activitystyles.button_style)
         self.train_button.setStyleSheet(activitystyles.button_style)
         self.test_button.setStyleSheet(activitystyles.button_style)
+        # Buttons clicked
+        self.train_button.clicked.connect(self.openTrainingWindow)
 
         # Add the buttons to the inner layout
         horizontal_grid.addWidget(self.load_data_button, 0, 0)  # The arguments are (widget, row, column)

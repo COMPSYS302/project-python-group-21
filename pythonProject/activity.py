@@ -8,6 +8,10 @@ from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
 
+# Define a constant for the maximum number of images to load initially and per batch
+MAX_IMAGES_DISPLAY = 100
+IMAGES_BATCH_SIZE = 20
+
 #  Created 'DataLoaderThread' class which handles the data loading and
 #  image conversion in a background thread.
 class DataLoaderThread(QThread):
@@ -23,18 +27,19 @@ class DataLoaderThread(QThread):
     def run(self):
         # Read the CSV file into a DataFrame
         data = pd.read_csv(self.filepath)
-        images = []  # List to hold the QPixmap images
+        images = []  # List to hold the QPixmap images along with their labels
         progress_num = len(data)  # Total number of rows in the DataFrame
 
         # Loop through each row in the DataFrame
         for i in range(progress_num):
+            label = data.iloc[i, 0]  # Extract the label
             pixels = data.iloc[i, 1:].values  # Extract pixel values from the row
             # Convert pixel values to a NumPy array and reshape to a 28x28 image
             image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
             # Create a QImage from the NumPy array
             qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
             # Convert QImage to QPixmap and add to the list
-            images.append(QPixmap.fromImage(qimage))
+            images.append((label, QPixmap.fromImage(qimage)))
             # Emit the progress signal with the percentage completed
             self.progress.emit(int((i + 1) / progress_num * 100))
 
@@ -48,7 +53,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.prevWindow.show()
         self.close()
 
-    # method to load file
+    # Method to load file
     def loadFile(self):
         fname = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
         if fname[0]:
@@ -59,15 +64,19 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.loadingProgressBar.setRange(0, 100)
             self.loadingProgressBar.show()
 
+    # Method to update the progress bar
     def updateProgressBar(self, value):
         self.loadingProgressBar.setValue(value)
 
+    # Method to handle data once loaded
     def onDataLoaded(self, images):
         self.images = images
+        self.filtered_images = images[:MAX_IMAGES_DISPLAY]  # Limit the number of displayed images initially
+        self.displayed_images_count = len(self.filtered_images)
         self.loadingProgressBar.hide()
         qtw.QMessageBox.information(self, "Success!", "Data loaded successfully.")
 
-    # method to view the images after loading and converting the data into images
+    # Method to view the images after loading and converting the data into images
     def viewConvertedImages(self):
         # Showing a warning message if the user has not loaded any data
         if not self.images:
@@ -79,20 +88,24 @@ class ActivityOptionsWindow(qtw.QWidget):
             for i in reversed(range(self.image_display_layout.count())):
                 self.image_display_layout.itemAt(i).widget().setParent(None)
 
-        # Creating a grid layout for the loaded images to be displayted
+        # Creating a grid layout for the loaded images to be displayed
         self.image_display_layout = qtw.QGridLayout()
 
-        # creating a scroll area to contain the grid layout
+        # Creating a scroll area to contain the grid layout
         scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
         scroll_images_widget.setLayout(self.image_display_layout)
 
-        # populating the image array with images that have been converted from the
-        # .csv file
-        for i, pixmap in enumerate(self.images):
-            label = qtw.QLabel()
-            label.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label, i // 10, i % 10)  # 10 images per row
+        # Creating search bar
+        self.search_bar = qtw.QLineEdit(self)
+        self.search_bar.setPlaceholderText("Search by label")
+        self.search_bar.textChanged.connect(self.filterImages)
+
+        # Add the search bar to the layout
+        self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
+
+        # Add the images to the layout
+        self.updateImageDisplay(self.filtered_images)
 
         scroll_area.setWidget(scroll_images_widget)
         scroll_area.setWidgetResizable(True)
@@ -102,13 +115,62 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.scroll_area = scroll_area
         self.show()
 
-    # class initialisation method
+        # Connect scroll event to load more images
+        scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
+
+    # Method to filter images based on the search query
+    def filterImages(self):
+        query = self.search_bar.text()
+        if query.isdigit():
+            label = int(query)
+            if 0 <= label <= 25:
+                self.filtered_images = [img for img in self.images if img[0] == label][:MAX_IMAGES_DISPLAY]
+                self.displayed_images_count = len(self.filtered_images)
+            else:
+                self.filtered_images = []
+                qtw.QMessageBox.warning(self, "Error", "Please enter a label between 0 and 25.")
+        else:
+            if query:
+                self.filtered_images = []
+                qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 25.")
+            else:
+                self.filtered_images = self.images[:MAX_IMAGES_DISPLAY]
+                self.displayed_images_count = len(self.filtered_images)
+
+        # Update the image display
+        self.updateImageDisplay(self.filtered_images)
+
+    # Method to load more images when scrolling
+    def loadMoreImages(self):
+        if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
+            next_images = self.images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            self.filtered_images.extend(next_images)
+            self.displayed_images_count += len(next_images)
+            self.updateImageDisplay(self.filtered_images, append=True)
+
+    # Method to update the display of images
+    def updateImageDisplay(self, images, append=False):
+        if not append:
+            # Clear any existing image display layout if not appending
+            if hasattr(self, 'image_display_layout'):
+                for i in reversed(range(self.image_display_layout.count())):
+                    self.image_display_layout.itemAt(i).widget().setParent(None)
+
+        # Populating the image array with images that have been converted from the .csv file
+        for i, (label, pixmap) in enumerate(images):
+            label_widget = qtw.QLabel()
+            label_widget.setPixmap(pixmap)
+            self.image_display_layout.addWidget(label_widget, i // 10, i % 10)  # 10 images per row
+
+    # Class initialization method
     def __init__(self, previouswindow):
         super().__init__()
 
         self.prevWindow = previouswindow
         self.data = None
         self.images = []
+        self.filtered_images = []
+        self.displayed_images_count = 0
         # Creating a title for the window
         self.window = None
         self.setWindowTitle("User Options")
@@ -120,7 +182,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         # Changing bg color to #31B1C8
         self.setStyleSheet("background-color: #8C52FF;")
 
-        # primary layout
+        # Primary layout
         parent_layout = qtw.QVBoxLayout()
 
         self.setLayout(parent_layout)

@@ -88,6 +88,16 @@ class ActivityStyles:
                     }
                 """
 
+        self.line_edit_style = """
+                    QLineEdit {
+                        background-color: white;
+                        border-radius: 10px;
+                        padding: 5px 30px 5px 30px;
+                        background: url(search_icon_30.png) no-repeat left;
+                        background-size: 16px;
+                    }
+                """
+
 # Styles for the Training Window
 class TrainingStyles:
     def __init__(self):

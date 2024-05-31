@@ -161,6 +161,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.search_bar = qtw.QLineEdit(self)
         self.search_bar.setPlaceholderText("Search by label")
         self.search_bar.textChanged.connect(self.filterImages)
+        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
 
         # Add the search bar to the layout
         self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area

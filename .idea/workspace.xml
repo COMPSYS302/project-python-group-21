@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="527f34ed-8d93-43c8-a6db-70a1f13aa729" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pythonProject/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/activity.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/activity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/styles.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/styles.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,6 +75,8 @@
       <workItem from="1717114493869" duration="158000" />
       <workItem from="1717114785757" duration="140000" />
       <workItem from="1717115214118" duration="4148000" />
+      <workItem from="1717128222866" duration="73000" />
+      <workItem from="1717144406789" duration="4436000" />
     </task>
     <servers />
   </component>
@@ -81,9 +84,9 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/project_python_group_21$styles.coverage" NAME="styles Coverage Results" MODIFIED="1717049938822" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
-    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717114793734" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
-    <SUITE FILE_PATH="coverage/project_python_group_21$train.coverage" NAME="train Coverage Results" MODIFIED="1717119351988" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$styles.coverage" NAME="styles Coverage Results" MODIFIED="1717149302653" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717149305676" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$train.coverage" NAME="train Coverage Results" MODIFIED="1717128254383" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
     <SUITE FILE_PATH="coverage/project_python_group_21$activity.coverage" NAME="activity Coverage Results" MODIFIED="1717072180984" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
   </component>
 </project>

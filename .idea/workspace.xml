@@ -5,9 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="527f34ed-8d93-43c8-a6db-70a1f13aa729" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/pythonProject/alexnet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pythonProject/train_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/project-python-group-21.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/project-python-group-21.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pythonProject/activity.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/activity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pythonProject/styles.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/styles.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,6 +41,7 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Python.activity.executor&quot;: &quot;Run&quot;,
+    &quot;Python.alexnet.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.styles.executor&quot;: &quot;Run&quot;,
     &quot;Python.train.executor&quot;: &quot;Run&quot;,
@@ -56,8 +60,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-PY-241.15989.155" />
-        <option value="bundled-python-sdk-babbdf50b680-7c6932dee5e4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.15989.155" />
+        <option value="bundled-python-sdk-babbdf50b680-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.15989.155" />
       </set>
     </attachedChunks>
   </component>

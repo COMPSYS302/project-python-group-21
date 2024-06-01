@@ -145,3 +145,10 @@ class TrainingStyles:
                                 selection-color: white;
                             }
                         """
+        self.text_styles = """
+                                    QLabel {
+                                        font-size: 20px; 
+                                        color: white;     
+                                        font-weight: bold;
+                                    }
+                                """

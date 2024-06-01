@@ -92,9 +92,10 @@ class TrainingProgressWindow(qtw.QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Training Progress')
-        self.setGeometry(960, 500, 800, 600)
-        self.setStyleSheet('background-color: white;')
+        self.setWindowTitle('Sign-SYS Training Progress')
+        self.setWindowIcon(QIcon('signsysweblogoturq.png'))
+        self.setGeometry(850, 450, 850, 850)
+        self.setStyleSheet('background-color: #8C52FF;')
 
         layout = qtw.QVBoxLayout()
         self.setLayout(layout)
@@ -103,7 +104,8 @@ class TrainingProgressWindow(qtw.QWidget):
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
-        self.timer_label = qtw.QLabel('Time elapsed: 0s')
+        self.timer_label = qtw.QLabel('Time elapsed: 00:00:00')
+        self.timer_label.setStyleSheet(activitystyles.text_styles)
         layout.addWidget(self.timer_label, alignment=Qt.AlignCenter)
 
         self.timer = QTimer(self)
@@ -126,22 +128,28 @@ class TrainingProgressWindow(qtw.QWidget):
 
     def update_timer(self):
         self.start_time += 1
-        self.timer_label.setText(f'Time elapsed: {self.start_time}s')
+        hours, remainder = divmod(self.start_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        self.timer_label.setText(f'Time elapsed: {hours:02}:{minutes:02}:{seconds:02}')
 
     def update_plots(self, training_losses, validation_accuracies, epochs, val_epochs):
         self.figure.clear()
 
         ax1 = self.figure.add_subplot(211)
         ax1.plot(epochs, training_losses, 'r-')
-        ax1.set_title('Training Loss vs Epochs')
+        ax1.set_title('Training Losses')
         ax1.set_xlabel('Epochs')
         ax1.set_ylabel('Loss')
+        ax1.margins(0.1)
 
         ax2 = self.figure.add_subplot(212)
         ax2.plot(val_epochs, validation_accuracies, 'b-')
-        ax2.set_title('Validation Accuracy vs Epochs')
+        ax2.set_title('Validation Accuracies')
         ax2.set_xlabel('Epochs')
         ax2.set_ylabel('Accuracy')
+        ax2.margins(0.1)
+
+        self.figure.tight_layout(pad=2.0)
 
         self.canvas.draw()
 

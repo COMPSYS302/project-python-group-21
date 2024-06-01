@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import numpy as np
 import time
@@ -6,7 +5,7 @@ import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 
-from train import TrainingWindow
+from pythonProject.train import TrainingWindow
 from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
@@ -27,7 +26,6 @@ label_remap = {
     34: 28,
     35: 31
 }
-
 
 # Created 'DataLoaderThread' class which handles the data loading and
 # image conversion in a background thread.
@@ -97,20 +95,18 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.close()
 
     def openTrainingWindow(self):
-        self.training_window = TrainingWindow(self)
-        self.training_window.show()
-        self.hide()
+        if not self.images:
+            qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
+        else:
+            self.training_window = TrainingWindow(self, self.file_path)
+            self.training_window.show()
+            self.hide()
 
     # Method to load file
     def loadFile(self):
         fname = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
         if fname[0]:
-            # Hide the search bar and image grid layout when loading new data
-            if hasattr(self, 'search_bar'):
-                self.search_bar.hide()
-            if hasattr(self, 'scroll_area'):
-                self.scroll_area.hide()
-
+            self.file_path = fname[0]
             self.loading_thread = DataLoaderThread(fname[0])
             self.loading_thread.progress.connect(self.updateProgressBar)
             self.loading_thread.data_loaded.connect(self.onDataLoaded)
@@ -153,17 +149,9 @@ class ActivityOptionsWindow(qtw.QWidget):
             return
 
         # Clear any existing image display layout
-        if hasattr(self, 'scroll_area'):
-            self.scroll_area.setParent(None)
-
-        # Creating the search bar if it doesn't already exist
-        if not hasattr(self, 'search_bar'):
-            self.search_bar = qtw.QLineEdit(self)
-            self.search_bar.setPlaceholderText("Search by label")
-            self.search_bar.textChanged.connect(self.filterImages)
-            self.search_bar.setStyleSheet(activitystyles.line_edit_style)
-            self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
-        self.search_bar.show()
+        if hasattr(self, 'image_display_layout'):
+            for i in reversed(range(self.image_display_layout.count())):
+                self.image_display_layout.itemAt(i).widget().setParent(None)
 
         # Creating a grid layout for the loaded images to be displayed
         self.image_display_layout = qtw.QGridLayout()
@@ -172,6 +160,15 @@ class ActivityOptionsWindow(qtw.QWidget):
         scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
         scroll_images_widget.setLayout(self.image_display_layout)
+
+        # Creating search bar
+        self.search_bar = qtw.QLineEdit(self)
+        self.search_bar.setPlaceholderText("Search by label")
+        self.search_bar.textChanged.connect(self.filterImages)
+        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+
+        # Add the search bar to the layout
+        self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
 
         # Add the images to the layout
         self.updateImageDisplay(self.filtered_images)
@@ -182,7 +179,6 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.layout().addWidget(scroll_area)
         self.scroll_area = scroll_area
-        self.scroll_area.show()
         self.show()
 
         # Connect scroll event to load more images
@@ -213,8 +209,7 @@ class ActivityOptionsWindow(qtw.QWidget):
     # Method to load more images when scrolling
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
-            next_images = self.filtered_images[
-                          self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            next_images = self.filtered_images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, append=True)
@@ -231,8 +226,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
-                                                self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):
@@ -243,6 +237,8 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.images = []
         self.filtered_images = []
         self.displayed_images_count = 0
+        self.file_path = None
+
         # Creating a title for the window
         self.window = None
         self.setWindowTitle("User Options")
@@ -251,7 +247,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         # Setting geometry of the window
         self.setGeometry(950, 450, 720, 600)
 
-        # Changing bg color to #31B1C8
+        # Changing bg color to #8C52FF
         self.setStyleSheet("background-color: #8C52FF;")
 
         # Primary layout
@@ -316,11 +312,3 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.load_data_button.clicked.connect(self.loadFile)
         self.view_data_button.clicked.connect(self.viewConvertedImages)
         self.show()
-
-
-if __name__ == "__main__":
-    app = qtw.QApplication(sys.argv)
-    main_window = qtw.QWidget()  # Placeholder for the previous window
-    activity_options_window = ActivityOptionsWindow(main_window)
-    activity_options_window.show()
-    sys.exit(app.exec_())

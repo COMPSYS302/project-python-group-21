@@ -107,13 +107,13 @@ class TrainingWindow(qtw.QWidget):
         epochs = self.epochs_slider.value()
         validation_split = self.train_test_ratio_slider.value() / 100.0
 
-        if model_name == "AlexNet" and self.file_path:
+        if model_name in ["AlexNet", "InceptionV3"] and self.file_path:
             print("Starting training...")
             self.progress_window = TrainingProgressWindow()
             self.progress_window.show()
             self.progress_window.start_timer()
-            training_thread = threading.Thread(target=train_model.train_alexnet_model, args=(self.file_path, epochs, batch_size,
-                                                                                             validation_split))
+            training_thread = threading.Thread(target=train_model.train_model, args=(self.file_path, epochs, batch_size,
+                                                                                      validation_split, model_name, self.progress_window))
             training_thread.start()
         else:
             qtw.QMessageBox.warning(self, "Warning", "Please select a valid model and load data first.")
@@ -153,7 +153,7 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addLayout(top_layout)
 
         self.cnn_dropdown = qtw.QComboBox()
-        self.cnn_dropdown.addItems(["-- Select Model --", "AlexNet"])
+        self.cnn_dropdown.addItems(["-- Select Model --", "AlexNet", "InceptionV3"])
         self.cnn_dropdown.setStyleSheet(trainingstyles.combobox_style)
         self.cnn_dropdown.setItemDelegate(CenterDropdownDelegate(self))
         training_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignTop)
@@ -198,8 +198,8 @@ class TrainingWindow(qtw.QWidget):
 
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
         self.epochs_slider.setMinimum(1)
-        self.epochs_slider.setMaximum(30)
-        self.epochs_slider.setValue(10)
+        self.epochs_slider.setMaximum(10)
+        self.epochs_slider.setValue(5)
         self.epochs_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.epochs_slider.setTickInterval(10)
         self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)

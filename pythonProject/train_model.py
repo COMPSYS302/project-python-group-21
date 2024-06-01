@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from alexnet import build_alexnet
+from inception import build_inception_v3
 
 def load_data(filepath):
     data = np.genfromtxt(filepath, delimiter=',', skip_header=1)
@@ -13,7 +14,7 @@ def load_data(filepath):
     y = data[:, 0].astype(int)
     return X, y
 
-def train_alexnet_model(filepath, epochs, batch_size, validation_split):
+def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window):
     X, y = load_data(filepath)
     dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
     val_size = int(len(dataset) * validation_split)
@@ -23,7 +24,13 @@ def train_alexnet_model(filepath, epochs, batch_size, validation_split):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    model = build_alexnet(num_classes=36)
+    if model_name == "AlexNet":
+        model = build_alexnet(num_classes=36)
+    elif model_name == "InceptionV3":
+        model = build_inception_v3(num_classes=36)
+    else:
+        raise ValueError("Unknown model name")
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -51,6 +58,14 @@ def train_alexnet_model(filepath, epochs, batch_size, validation_split):
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
 
-        print(f'Epoch {epoch+1}/{epochs}, Train Loss: {running_loss/len(train_loader)}, Val Loss: {val_loss/len(val_loader)}, Accuracy: {100 * correct / total}%')
+        train_loss = running_loss / len(train_loader)
+        val_accuracy = 100 * correct / total
 
-    torch.save(model.state_dict(), 'alexnet_model.pth')
+        if progress_window:
+            progress_window.add_data(epoch + 1, train_loss, val_accuracy)
+
+        print(f'Epoch {epoch+1}/{epochs}, Train Loss: {train_loss}, Val Loss: {val_loss/len(val_loader)}, Accuracy: {val_accuracy}%')
+
+    if progress_window:
+        progress_window.stop_timer()
+    torch.save(model.state_dict(), f'{model_name.lower()}_model.pth')

@@ -1,3 +1,5 @@
+import sys
+
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt
@@ -78,13 +80,11 @@ class HomeWindow(qtw.QWidget):
         self.show()
 
 
-# intialising app first. note that this is only needed for the first (main) window
-app = qtw.QApplication([])
-
-# creating object of class HomeWindow() which initialises the ui
-# since the ui is in the __init__ method that is automatically
-# executed when creating the respective object
-home_w = HomeWindow()
-
-# executing application when the file is run
-app.exec_()
+if __name__ == "__main__":
+    # intialising app first. note that this is only needed for the first (main) window
+    app = qtw.QApplication(sys.argv)
+    # creating object of class HomeWindow() which initialises the ui
+    # since the ui is in the __init__ method that is automatically
+    # executed when creating the respective object
+    home_w = HomeWindow()
+    sys.exit(app.exec_())

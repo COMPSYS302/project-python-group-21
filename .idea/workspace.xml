@@ -5,8 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="527f34ed-8d93-43c8-a6db-70a1f13aa729" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/project-python-group-21.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/project-python-group-21.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pythonProject/activity.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/activity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +44,7 @@
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.styles.executor&quot;: &quot;Run&quot;,
     &quot;Python.train.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train_model.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
@@ -56,7 +60,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-babbdf50b680-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.15989.155" />
+        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-PY-241.15989.155" />
+        <option value="bundled-python-sdk-babbdf50b680-7c6932dee5e4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.15989.155" />
       </set>
     </attachedChunks>
   </component>
@@ -76,6 +81,8 @@
       <workItem from="1717115214118" duration="4148000" />
       <workItem from="1717128222866" duration="73000" />
       <workItem from="1717144406789" duration="4436000" />
+      <workItem from="1717225309606" duration="3941000" />
+      <workItem from="1717230230390" duration="18277000" />
     </task>
     <servers />
   </component>
@@ -84,8 +91,9 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/project_python_group_21$styles.coverage" NAME="styles Coverage Results" MODIFIED="1717149302653" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
-    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717149305676" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
-    <SUITE FILE_PATH="coverage/project_python_group_21$train.coverage" NAME="train Coverage Results" MODIFIED="1717128254383" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$train_model.coverage" NAME="train_model Coverage Results" MODIFIED="1717228242279" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717248611028" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$train.coverage" NAME="train Coverage Results" MODIFIED="1717237874089" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
     <SUITE FILE_PATH="coverage/project_python_group_21$activity.coverage" NAME="activity Coverage Results" MODIFIED="1717072180984" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
   </component>
 </project>

@@ -1,15 +1,156 @@
 import sys
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import threading
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 from styles import ActivityStyles
 from styles import TrainingStyles
-from train_model import train_alexnet_model
+
+import torch
+import torch.optim as optim
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from alexnet import build_alexnet
 
 activitystyles = ActivityStyles()
 trainingstyles = TrainingStyles()
+
+
+def load_data(filepath):
+    data = np.genfromtxt(filepath, delimiter=',', skip_header=1)
+    data = np.nan_to_num(data)  # Replace nan values with zero
+    X = data[:, 1:].reshape(-1, 1, 28, 28).astype(np.float32)
+    y = data[:, 0].astype(int)
+    return X, y
+
+
+def train_alexnet_model(filepath, epochs=10, batch_size=32, validation_split=0.2, progress_window=None):
+    X, y = load_data(filepath)
+    dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
+    val_size = int(len(dataset) * validation_split)
+    train_size = len(dataset) - val_size
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+    model = build_alexnet(num_classes=36)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    training_losses = []
+    validation_accuracies = []
+
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for inputs, labels in train_loader:
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+        model.eval()
+        val_loss = 0.0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+                _, predicted = torch.max(outputs, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        train_loss = running_loss / len(train_loader)
+        val_accuracy = 100 * (correct / total)
+        training_losses.append(train_loss)
+        validation_accuracies.append(val_accuracy)
+
+        if progress_window:
+            progress_window.add_data(epoch + 1, train_loss, val_accuracy)
+
+        print(f'Epoch {epoch+1}/{epochs}, Train Loss: {train_loss}, Val Loss: {val_loss/len(val_loader)}, Accuracy: {val_accuracy}%')
+
+    if progress_window:
+        progress_window.stop_timer()
+    torch.save(model.state_dict(), 'alexnet_model.pth')
+
+
+class TrainingProgressWindow(qtw.QWidget):
+    update_plot_signal = pyqtSignal(list, list, list, list)
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Training Progress')
+        self.setGeometry(960, 500, 800, 600)
+        self.setStyleSheet('background-color: white;')
+
+        layout = qtw.QVBoxLayout()
+        self.setLayout(layout)
+
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        layout.addWidget(self.canvas)
+
+        self.timer_label = qtw.QLabel('Time elapsed: 0s')
+        layout.addWidget(self.timer_label, alignment=Qt.AlignCenter)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_timer)
+        self.start_time = 0
+
+        self.training_losses = []
+        self.validation_accuracies = []
+        self.epochs = []
+        self.val_epochs = []
+
+        self.update_plot_signal.connect(self.update_plots)
+
+    def start_timer(self):
+        self.start_time = 0
+        self.timer.start(1000)
+
+    def stop_timer(self):
+        self.timer.stop()
+
+    def update_timer(self):
+        self.start_time += 1
+        self.timer_label.setText(f'Time elapsed: {self.start_time}s')
+
+    def update_plots(self, training_losses, validation_accuracies, epochs, val_epochs):
+        self.figure.clear()
+
+        ax1 = self.figure.add_subplot(211)
+        ax1.plot(epochs, training_losses, 'r-')
+        ax1.set_title('Training Loss vs Epochs')
+        ax1.set_xlabel('Epochs')
+        ax1.set_ylabel('Loss')
+
+        ax2 = self.figure.add_subplot(212)
+        ax2.plot(val_epochs, validation_accuracies, 'b-')
+        ax2.set_title('Validation Accuracy vs Epochs')
+        ax2.set_xlabel('Epochs')
+        ax2.set_ylabel('Accuracy')
+
+        self.canvas.draw()
+
+    def add_data(self, epoch, train_loss, val_accuracy):
+        self.epochs.append(epoch)
+        self.val_epochs.append(epoch)
+        self.training_losses.append(train_loss)
+        self.validation_accuracies.append(val_accuracy)
+        self.update_plot_signal.emit(self.training_losses, self.validation_accuracies, self.epochs, self.val_epochs)
 
 
 class CenterDropdownDelegate(qtw.QStyledItemDelegate):
@@ -33,8 +174,13 @@ class TrainingWindow(qtw.QWidget):
         validation_split = self.train_test_ratio_slider.value() / 100.0
 
         if model_name == "AlexNet" and self.file_path:
-            threading.Thread(target=train_alexnet_model,
-                             args=(self.file_path, epochs, batch_size, validation_split)).start()
+            print("Starting training...")
+            self.progress_window = TrainingProgressWindow()
+            self.progress_window.show()
+            self.progress_window.start_timer()
+            training_thread = threading.Thread(target=train_alexnet_model, args=(self.file_path, epochs, batch_size,
+                                                                                 validation_split, self.progress_window))
+            training_thread.start()
         else:
             qtw.QMessageBox.warning(self, "Warning", "Please select a valid model and load data first.")
 
@@ -137,6 +283,3 @@ class TrainingWindow(qtw.QWidget):
         self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.batch_size_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-
-
-

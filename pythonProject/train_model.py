@@ -1,9 +1,9 @@
+# train_model.py
 import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
-import pandas as pd
 from alexnet import build_alexnet
 
 def load_data(filepath):
@@ -13,7 +13,7 @@ def load_data(filepath):
     y = data[:, 0].astype(int)
     return X, y
 
-def train_alexnet_model(filepath, epochs=10, batch_size=32, validation_split=0.2):
+def train_alexnet_model(filepath, epochs, batch_size, validation_split):
     X, y = load_data(filepath)
     dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
     val_size = int(len(dataset) * validation_split)

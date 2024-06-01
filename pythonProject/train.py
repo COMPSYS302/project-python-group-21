@@ -1,91 +1,17 @@
+# train.py
 import sys
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import threading
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-
 from styles import ActivityStyles
 from styles import TrainingStyles
-
-import torch
-import torch.optim as optim
-import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from alexnet import build_alexnet
+import train_model
 
 activitystyles = ActivityStyles()
 trainingstyles = TrainingStyles()
-
-
-def load_data(filepath):
-    data = np.genfromtxt(filepath, delimiter=',', skip_header=1)
-    data = np.nan_to_num(data)  # Replace nan values with zero
-    X = data[:, 1:].reshape(-1, 1, 28, 28).astype(np.float32)
-    y = data[:, 0].astype(int)
-    return X, y
-
-
-def train_alexnet_model(filepath, epochs=10, batch_size=32, validation_split=0.2, progress_window=None):
-    X, y = load_data(filepath)
-    dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
-    val_size = int(len(dataset) * validation_split)
-    train_size = len(dataset) - val_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-    model = build_alexnet(num_classes=36)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    training_losses = []
-    validation_accuracies = []
-
-    for epoch in range(epochs):
-        model.train()
-        running_loss = 0.0
-        for inputs, labels in train_loader:
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
-
-        model.eval()
-        val_loss = 0.0
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, labels in val_loader:
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-                _, predicted = torch.max(outputs, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-        train_loss = running_loss / len(train_loader)
-        val_accuracy = 100 * (correct / total)
-        training_losses.append(train_loss)
-        validation_accuracies.append(val_accuracy)
-
-        if progress_window:
-            progress_window.add_data(epoch + 1, train_loss, val_accuracy)
-
-        print(f'Epoch {epoch+1}/{epochs}, Train Loss: {train_loss}, Val Loss: {val_loss/len(val_loader)}, Accuracy: {val_accuracy}%')
-
-    if progress_window:
-        progress_window.stop_timer()
-    torch.save(model.state_dict(), 'alexnet_model.pth')
-
 
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
@@ -186,8 +112,8 @@ class TrainingWindow(qtw.QWidget):
             self.progress_window = TrainingProgressWindow()
             self.progress_window.show()
             self.progress_window.start_timer()
-            training_thread = threading.Thread(target=train_alexnet_model, args=(self.file_path, epochs, batch_size,
-                                                                                 validation_split, self.progress_window))
+            training_thread = threading.Thread(target=train_model.train_alexnet_model, args=(self.file_path, epochs, batch_size,
+                                                                                             validation_split))
             training_thread.start()
         else:
             qtw.QMessageBox.warning(self, "Warning", "Please select a valid model and load data first.")
@@ -240,7 +166,7 @@ class TrainingWindow(qtw.QWidget):
         self.train_test_ratio_slider = qtw.QSlider(Qt.Horizontal)
         self.train_test_ratio_slider.setMinimum(1)
         self.train_test_ratio_slider.setMaximum(99)
-        self.train_test_ratio_slider.setValue(80)
+        self.train_test_ratio_slider.setValue(50)
         self.train_test_ratio_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.train_test_ratio_slider.setTickInterval(10)
         self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
@@ -272,7 +198,7 @@ class TrainingWindow(qtw.QWidget):
 
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
         self.epochs_slider.setMinimum(1)
-        self.epochs_slider.setMaximum(100)
+        self.epochs_slider.setMaximum(30)
         self.epochs_slider.setValue(10)
         self.epochs_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.epochs_slider.setTickInterval(10)

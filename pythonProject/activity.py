@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import numpy as np
 import time
@@ -5,7 +6,7 @@ import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 
-from pythonProject.train import TrainingWindow
+from train import TrainingWindow
 from styles import ActivityStyles
 
 activitystyles = ActivityStyles()
@@ -103,6 +104,12 @@ class ActivityOptionsWindow(qtw.QWidget):
     def loadFile(self):
         fname = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
         if fname[0]:
+            # Hide the search bar and image grid layout when loading new data
+            if hasattr(self, 'search_bar'):
+                self.search_bar.hide()
+            if hasattr(self, 'scroll_area'):
+                self.scroll_area.hide()
+
             self.loading_thread = DataLoaderThread(fname[0])
             self.loading_thread.progress.connect(self.updateProgressBar)
             self.loading_thread.data_loaded.connect(self.onDataLoaded)
@@ -145,9 +152,8 @@ class ActivityOptionsWindow(qtw.QWidget):
             return
 
         # Clear any existing image display layout
-        if hasattr(self, 'image_display_layout'):
-            for i in reversed(range(self.image_display_layout.count())):
-                self.image_display_layout.itemAt(i).widget().setParent(None)
+        if hasattr(self, 'scroll_area'):
+            self.scroll_area.setParent(None)
 
         # Creating a grid layout for the loaded images to be displayed
         self.image_display_layout = qtw.QGridLayout()
@@ -157,15 +163,20 @@ class ActivityOptionsWindow(qtw.QWidget):
         scroll_images_widget = qtw.QWidget()
         scroll_images_widget.setLayout(self.image_display_layout)
 
-        # Creating search bar
-        self.search_bar = qtw.QLineEdit(self)
-        self.search_bar.setPlaceholderText("Search by label")
-        self.search_bar.textChanged.connect(self.filterImages)
-        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+
 
         # Add the search bar to the layout
         self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
 
+        if hasattr(self, 'search_bar'):
+            pass
+        else:
+            # Creating search bar
+            self.search_bar = qtw.QLineEdit(self)
+            self.search_bar.setPlaceholderText("Search by label")
+            self.search_bar.textChanged.connect(self.filterImages)
+            self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+            
         # Add the images to the layout
         self.updateImageDisplay(self.filtered_images)
 
@@ -175,6 +186,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.layout().addWidget(scroll_area)
         self.scroll_area = scroll_area
+        self.scroll_area.show()
         self.show()
 
         # Connect scroll event to load more images
@@ -306,3 +318,10 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.load_data_button.clicked.connect(self.loadFile)
         self.view_data_button.clicked.connect(self.viewConvertedImages)
         self.show()
+
+if __name__ == "__main__":
+    app = qtw.QApplication(sys.argv)
+    main_window = qtw.QWidget()  # Placeholder for the previous window
+    activity_options_window = ActivityOptionsWindow(main_window)
+    activity_options_window.show()
+    sys.exit(app.exec_())

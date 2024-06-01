@@ -28,6 +28,7 @@ label_remap = {
     35: 31
 }
 
+
 # Created 'DataLoaderThread' class which handles the data loading and
 # image conversion in a background thread.
 class DataLoaderThread(QThread):
@@ -155,6 +156,15 @@ class ActivityOptionsWindow(qtw.QWidget):
         if hasattr(self, 'scroll_area'):
             self.scroll_area.setParent(None)
 
+        # Creating the search bar if it doesn't already exist
+        if not hasattr(self, 'search_bar'):
+            self.search_bar = qtw.QLineEdit(self)
+            self.search_bar.setPlaceholderText("Search by label")
+            self.search_bar.textChanged.connect(self.filterImages)
+            self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+            self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
+        self.search_bar.show()
+
         # Creating a grid layout for the loaded images to be displayed
         self.image_display_layout = qtw.QGridLayout()
 
@@ -163,20 +173,6 @@ class ActivityOptionsWindow(qtw.QWidget):
         scroll_images_widget = qtw.QWidget()
         scroll_images_widget.setLayout(self.image_display_layout)
 
-
-
-        # Add the search bar to the layout
-        self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
-
-        if hasattr(self, 'search_bar'):
-            pass
-        else:
-            # Creating search bar
-            self.search_bar = qtw.QLineEdit(self)
-            self.search_bar.setPlaceholderText("Search by label")
-            self.search_bar.textChanged.connect(self.filterImages)
-            self.search_bar.setStyleSheet(activitystyles.line_edit_style)
-            
         # Add the images to the layout
         self.updateImageDisplay(self.filtered_images)
 
@@ -217,7 +213,8 @@ class ActivityOptionsWindow(qtw.QWidget):
     # Method to load more images when scrolling
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
-            next_images = self.filtered_images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            next_images = self.filtered_images[
+                          self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, append=True)
@@ -234,7 +231,8 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
+                                                self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):
@@ -318,6 +316,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.load_data_button.clicked.connect(self.loadFile)
         self.view_data_button.clicked.connect(self.viewConvertedImages)
         self.show()
+
 
 if __name__ == "__main__":
     app = qtw.QApplication(sys.argv)

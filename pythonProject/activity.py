@@ -1,12 +1,15 @@
 import pandas as pd
 import numpy as np
 import time
+import torch
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 
 from pythonProject.train import TrainingWindow
 from styles import ActivityStyles
+from alexnet import build_alexnet
+from inception import build_inception_v3
 
 activitystyles = ActivityStyles()
 
@@ -26,6 +29,7 @@ label_remap = {
     34: 28,
     35: 31
 }
+
 
 # Created 'DataLoaderThread' class which handles the data loading and
 # image conversion in a background thread.
@@ -88,6 +92,31 @@ class DataLoaderThread(QThread):
             self.stopped = True
 
 
+class ImageDisplayWindow(qtw.QWidget):
+    def __init__(self, images):
+        super().__init__()
+        self.setWindowTitle("Training Images")
+        self.setGeometry(100, 100, 800, 600)
+
+        layout = qtw.QVBoxLayout()
+        scroll_area = qtw.QScrollArea()
+        scroll_widget = qtw.QWidget()
+        image_layout = qtw.QGridLayout()
+
+        scroll_widget.setLayout(image_layout)
+        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidgetResizable(True)
+
+        for i, (label, pixmap) in enumerate(images):
+            label_widget = qtw.QLabel()
+            label_widget.setPixmap(pixmap)
+            image_layout.addWidget(label_widget, i // 10, i % 10)
+
+        layout.addWidget(scroll_area)
+        self.setLayout(layout)
+        self.show()
+
+
 class ActivityOptionsWindow(qtw.QWidget):
 
     def returnToHome(self):
@@ -105,6 +134,52 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.training_window = TrainingWindow(self, self.file_path)
             self.training_window.show()
             self.hide()
+
+    def openTestModelWindow(self):
+        fname = qtw.QFileDialog.getOpenFileName(self, "Open Model File",
+                                                "C:\\Users\\Harsh\\OneDrive\\Documents\\Android studip\\project-python-group-21\\pythonProject\\Models",
+                                                "Model Files (*.pth);;All Files (*)")
+        if fname[0]:
+            self.model_path = fname[0]
+            self.loadAndTestModel(self.model_path)
+
+    def loadAndTestModel(self, model_path):
+        try:
+            model_info = torch.load(model_path)
+            model_name = model_info['model_name']
+            model_state_dict = model_info['model_state_dict']
+            image_paths = model_info['image_paths']
+
+            if model_name == "AlexNet":
+                model = build_alexnet(num_classes=36)
+            elif model_name == "InceptionV3":
+                model = build_inception_v3(num_classes=36)
+            else:
+                raise ValueError("Unknown model name")
+
+            model.load_state_dict(model_state_dict)
+            model.eval()
+            qtw.QMessageBox.information(self, "Success", f"Model {model_name} loaded successfully for testing.")
+
+            self.displayTrainingImages(image_paths)
+
+        except Exception as e:
+            qtw.QMessageBox.critical(self, "Error", f"Failed to load the model: {str(e)}")
+
+    def displayTrainingImages(self, filepath):
+        data = pd.read_csv(filepath)
+        images = []
+
+        for i in range(len(data)):
+            label = data.iloc[i, 0]
+            label = label_remap.get(label, label)
+            pixels = data.iloc[i, 1:].values
+            image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
+            qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
+            images.append((label, QPixmap.fromImage(qimage)))
+
+        self.image_display_window = ImageDisplayWindow(images)
+        self.image_display_window.show()
 
     # Method to load file
     def loadFile(self):
@@ -217,7 +292,8 @@ class ActivityOptionsWindow(qtw.QWidget):
     # Method to load more images when scrolling
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
-            next_images = self.filtered_images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            next_images = self.filtered_images[
+                          self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, append=True)
@@ -234,7 +310,8 @@ class ActivityOptionsWindow(qtw.QWidget):
         for i, (label, pixmap) in enumerate(images):
             label_widget = qtw.QLabel()
             label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
+                                                self.image_display_layout.count() % 10)
 
     # Class initialization method
     def __init__(self, previouswindow):
@@ -289,6 +366,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.test_button.setStyleSheet(activitystyles.button_style)
         # Buttons clicked
         self.train_button.clicked.connect(self.openTrainingWindow)
+        self.test_button.clicked.connect(self.openTestModelWindow)
 
         # Add the buttons to the inner layout
         horizontal_grid.addWidget(self.load_data_button, 0, 0)  # The arguments are (widget, row, column)

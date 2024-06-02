@@ -6,6 +6,9 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from alexnet import build_alexnet
 from inception import build_inception_v3
+import uuid
+import os
+
 
 def load_data(filepath):
     data = np.genfromtxt(filepath, delimiter=',', skip_header=1)
@@ -13,6 +16,7 @@ def load_data(filepath):
     X = data[:, 1:].reshape(-1, 1, 28, 28).astype(np.float32)
     y = data[:, 0].astype(int)
     return X, y
+
 
 def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window, stop_event):
     X, y = load_data(filepath)
@@ -80,8 +84,22 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
         if progress_window:
             progress_window.add_data(epoch + 1, train_loss, val_accuracy)
 
-        print(f'Epoch {epoch+1}/{epochs}, Train Loss: {train_loss}, Val Loss: {val_loss/len(val_loader)}, Accuracy: {val_accuracy}%')
+        print(
+            f'Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss}, Val Loss: {val_loss / len(val_loader)}, Accuracy: {val_accuracy}%')
 
     if progress_window:
         progress_window.stop_timer()
-    torch.save(model.state_dict(), f'{model_name.lower()}_model.pth')
+
+    model_id = str(uuid.uuid4())
+    model_save_path = os.path.join(
+        'C:\\Users\\Harsh\\OneDrive\\Documents\\Android studip\\project-python-group-21\\pythonProject\\Models',
+        f'{model_name.lower()}_model_{model_id}.pth')
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'model_name': model_name,
+        'epochs': epochs,
+        'batch_size': batch_size,
+        'validation_split': validation_split,
+        'image_paths': filepath  # Save the path of the file used for training
+    }, model_save_path)
+    print(f'Model saved as {model_save_path}')

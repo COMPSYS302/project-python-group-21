@@ -91,8 +91,12 @@ class DataLoaderThread(QThread):
 class ActivityOptionsWindow(qtw.QWidget):
 
     def returnToHome(self):
-        self.prevWindow.show()
-        self.close()
+        response = qtw.QMessageBox.question(self, 'Return to Home',
+                                            'Returning will clear loaded data. Do you want to continue?',
+                                            qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No)
+        if response == qtw.QMessageBox.Yes:
+            self.prevWindow.show()
+            self.close()
 
     def openTrainingWindow(self):
         if not self.images:
@@ -149,9 +153,13 @@ class ActivityOptionsWindow(qtw.QWidget):
             return
 
         # Clear any existing image display layout
-        if hasattr(self, 'image_display_layout'):
+        if hasattr(self, 'image_display_layout') and hasattr(self, 'search_bar'):
             for i in reversed(range(self.image_display_layout.count())):
                 self.image_display_layout.itemAt(i).widget().setParent(None)
+
+            self.updateImageDisplay(self.filtered_images)
+            self.show()
+            return
 
         # Creating a grid layout for the loaded images to be displayed
         self.image_display_layout = qtw.QGridLayout()

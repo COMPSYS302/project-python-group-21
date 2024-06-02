@@ -16,8 +16,9 @@ trainingstyles = TrainingStyles()
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
 
-    def __init__(self):
+    def __init__(self, stop_event):
         super().__init__()
+        self.stop_event = stop_event
         self.setWindowTitle('Sign-SYS Training Progress')
         self.setWindowIcon(QIcon('signsysweblogoturq.png'))
         self.setGeometry(850, 450, 850, 850)
@@ -33,6 +34,11 @@ class TrainingProgressWindow(qtw.QWidget):
         self.timer_label = qtw.QLabel('Time elapsed: 00:00:00')
         self.timer_label.setStyleSheet(activitystyles.text_styles)
         layout.addWidget(self.timer_label, alignment=Qt.AlignCenter)
+
+        self.stop_btn = qtw.QPushButton('Stop Training')
+        self.stop_btn.setStyleSheet(activitystyles.button_style)
+        self.stop_btn.clicked.connect(self.stop_training)
+        layout.addWidget(self.stop_btn, alignment=Qt.AlignCenter)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
@@ -86,6 +92,15 @@ class TrainingProgressWindow(qtw.QWidget):
         self.validation_accuracies.append(val_accuracy)
         self.update_plot_signal.emit(self.training_losses, self.validation_accuracies, self.epochs, self.val_epochs)
 
+    def stop_training(self):
+        self.stop_event.set()
+        self.stop_timer()
+        self.close()
+
+    def closeEvent(self, event):
+        self.stop_training()
+        super().closeEvent(event)
+
 
 class CenterDropdownDelegate(qtw.QStyledItemDelegate):
     def __init__(self, parent=None):
@@ -109,11 +124,15 @@ class TrainingWindow(qtw.QWidget):
 
         if model_name in ["AlexNet", "InceptionV3"] and self.file_path:
             print("Starting training...")
-            self.progress_window = TrainingProgressWindow()
+            self.stop_event = threading.Event()
+            self.progress_window = TrainingProgressWindow(self.stop_event)
             self.progress_window.show()
             self.progress_window.start_timer()
-            training_thread = threading.Thread(target=train_model.train_model, args=(self.file_path, epochs, batch_size,
-                                                                                      validation_split, model_name, self.progress_window))
+            training_thread = threading.Thread(target=train_model.train_model, args=(self.file_path,
+                                                                                     epochs, batch_size,
+                                                                                     validation_split, model_name,
+                                                                                     self.progress_window,
+                                                                                     self.stop_event))
             training_thread.start()
         else:
             qtw.QMessageBox.warning(self, "Warning", "Please select a valid model and load data first.")

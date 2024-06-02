@@ -14,7 +14,7 @@ def load_data(filepath):
     y = data[:, 0].astype(int)
     return X, y
 
-def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window):
+def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window, stop_event):
     X, y = load_data(filepath)
     dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
     val_size = int(len(dataset) * validation_split)
@@ -35,9 +35,17 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     for epoch in range(epochs):
+        if stop_event.is_set():
+            print("Training is stopped")
+            break
+
         model.train()
         running_loss = 0.0
         for inputs, labels in train_loader:
+            if stop_event.is_set():
+                print("Training is stopped")
+                break
+
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -45,12 +53,20 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
             optimizer.step()
             running_loss += loss.item()
 
+        if stop_event.is_set():
+            print("Training is stopped")
+            break
+
         model.eval()
         val_loss = 0.0
         correct = 0
         total = 0
         with torch.no_grad():
             for inputs, labels in val_loader:
+                if stop_event.is_set():
+                    print("Training is stopped")
+                    break
+
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()

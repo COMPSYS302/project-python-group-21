@@ -8,7 +8,7 @@ class HomeWindowStyles:
                    font-weight: bold;
                    margin-top: 40px;
                    margin-bottom: 20px;
-                   
+
             }
         """
 
@@ -25,16 +25,17 @@ class HomeWindowStyles:
                     padding: 10px;
                     margin-bottom: 40px;
             }
-            
+
             QPushButton:hover {
                 background-color: #3D0289;
                 color: white
             }
-            
+
             QPushButton:pressed {
                 background-color: #545454;
             }
         """
+
 
 # Styles for the Activity Window
 class ActivityStyles:
@@ -82,7 +83,7 @@ class ActivityStyles:
                         border-radius: 5px;
                         border-color: white;
                     }
-                    
+
                     QProgressBar::chunk {
                         background : #3D0289;
                     }
@@ -97,6 +98,7 @@ class ActivityStyles:
                         background-size: 16px;
                     }
                 """
+
 
 # Styles for the Training Window
 class TrainingStyles:

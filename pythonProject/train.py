@@ -4,14 +4,17 @@ import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import threading
+import logging
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from styles import ActivityStyles
-from styles import TrainingStyles
+from styles import ActivityStyles, TrainingStyles
 import train_model
 
 activitystyles = ActivityStyles()
 trainingstyles = TrainingStyles()
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
@@ -93,11 +96,13 @@ class TrainingProgressWindow(qtw.QWidget):
         self.update_plot_signal.emit(self.training_losses, self.validation_accuracies, self.epochs, self.val_epochs)
 
     def stop_training(self):
+        logging.debug("Stopping training...")
         self.stop_event.set()
         self.stop_timer()
         self.close()
 
     def closeEvent(self, event):
+        logging.debug("Closing training progress window...")
         self.stop_training()
         super().closeEvent(event)
 
@@ -123,18 +128,16 @@ class TrainingWindow(qtw.QWidget):
         validation_split = self.train_test_ratio_slider.value() / 100.0
 
         if model_name in ["AlexNet", "InceptionV3"] and self.file_path:
-            print("Starting training...")
+            logging.debug(f"Starting training with model: {model_name}, batch size: {batch_size}, epochs: {epochs}, validation split: {validation_split}")
             self.stop_event = threading.Event()
             self.progress_window = TrainingProgressWindow(self.stop_event)
             self.progress_window.show()
             self.progress_window.start_timer()
-            training_thread = threading.Thread(target=train_model.train_model, args=(self.file_path,
-                                                                                     epochs, batch_size,
-                                                                                     validation_split, model_name,
-                                                                                     self.progress_window,
-                                                                                     self.stop_event))
+            training_thread = threading.Thread(target=train_model.train_model, args=(
+                self.file_path, epochs, batch_size, validation_split, model_name, self.progress_window, self.stop_event))
             training_thread.start()
         else:
+            logging.warning("Invalid model selection or data not loaded.")
             qtw.QMessageBox.warning(self, "Warning", "Please select a valid model and load data first.")
 
     def __init__(self, prev_window, file_path):

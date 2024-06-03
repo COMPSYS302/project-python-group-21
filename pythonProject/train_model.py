@@ -99,7 +99,7 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
 
         model_id = str(uuid.uuid4())
         model_save_path = os.path.join(
-            'C:\\Users\\Harsh\\OneDrive\\Documents\\Android studip\\project-python-group-21\\pythonProject\\Models',
+            'C:\\Users\\lojan\\OneDrive\\Documents\\Uni\\COMPSYS305\\project-python-group-21\\pythonProject\\Models',
             f'{model_name.lower()}_model_{model_id}.pth')
         torch.save({
             'model_state_dict': best_model_state,

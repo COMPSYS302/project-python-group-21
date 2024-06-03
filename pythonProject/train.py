@@ -220,7 +220,7 @@ class TrainingWindow(qtw.QWidget):
 
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
         self.epochs_slider.setMinimum(1)
-        self.epochs_slider.setMaximum(10)
+        self.epochs_slider.setMaximum(30)
         self.epochs_slider.setValue(5)
         self.epochs_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.epochs_slider.setTickInterval(10)

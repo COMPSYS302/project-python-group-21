@@ -83,7 +83,7 @@ class DataLoaderThread(QThread):
                 # Create a QImage from the NumPy array
                 qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
                 # Convert QImage to QPixmap and add to the list
-                images.append((label, QPixmap.fromImage(qimage)))
+                images.append((label, QPixmap.fromImage(qimage), image_array))
                 # Emit the progress signal with the percentage completed
                 self.progress.emit(int((i + 1) / progress_num * 100))
 
@@ -107,28 +107,99 @@ class DataLoaderThread(QThread):
 
 
 class ImageDisplayWindow(qtw.QWidget):
-    def __init__(self, images):
+    def __init__(self, images, model=None, model_name=None):
         super().__init__()
         self.setWindowTitle("Training Images")
         self.setGeometry(100, 100, 800, 600)
 
+        self.images = images
+        self.model = model
+        self.model_name = model_name
+
         layout = qtw.QVBoxLayout()
+        self.search_bar = qtw.QLineEdit(self)
+        self.search_bar.setPlaceholderText("Search by label")
+        self.search_bar.textChanged.connect(self.filterImages)
+        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+
+        layout.addWidget(self.search_bar)
+
         scroll_area = qtw.QScrollArea()
         scroll_widget = qtw.QWidget()
-        image_layout = qtw.QGridLayout()
+        self.image_layout = qtw.QGridLayout()
 
-        scroll_widget.setLayout(image_layout)
+        scroll_widget.setLayout(self.image_layout)
         scroll_area.setWidget(scroll_widget)
         scroll_area.setWidgetResizable(True)
 
-        for i, (label, pixmap) in enumerate(images):
-            label_widget = qtw.QLabel()
-            label_widget.setPixmap(pixmap)
-            image_layout.addWidget(label_widget, i // 10, i % 10)
+        for i, (label, pixmap, image_array) in enumerate(images):
+            if self.model:
+                label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
+            else:
+                label_widget = qtw.QLabel()
+                label_widget.setPixmap(pixmap)
+            self.image_layout.addWidget(label_widget, i // 10, i % 10)
 
         layout.addWidget(scroll_area)
         self.setLayout(layout)
         self.show()
+
+    def filterImages(self):
+        query = self.search_bar.text()
+        filtered_images = []
+
+        if query.isdigit():
+            label = int(query)
+            if 0 <= label <= 35:
+                filtered_images = [img for img in self.images if img[0] == label]
+        else:
+            if query:
+                filtered_images = []
+                qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 35.")
+            else:
+                filtered_images = self.images
+
+        self.updateImageDisplay(filtered_images)
+
+    def updateImageDisplay(self, images):
+        for i in reversed(range(self.image_layout.count())):
+            self.image_layout.itemAt(i).widget().setParent(None)
+
+        for i, (label, pixmap, image_array) in enumerate(images):
+            if self.model:
+                label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
+            else:
+                label_widget = qtw.QLabel()
+                label_widget.setPixmap(pixmap)
+            self.image_layout.addWidget(label_widget, i // 10, i % 10)
+
+
+class ClickableLabel(qtw.QLabel):
+    def __init__(self, label, pixmap, image_array, model, model_name):
+        super().__init__()
+        self.label = label
+        self.setPixmap(pixmap)
+        self.image_array = image_array
+        self.model = model
+        self.model_name = model_name
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.predict_and_show()
+
+    def predict_and_show(self):
+        try:
+            self.model.eval()
+            with torch.no_grad():
+                image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float()
+                output = self.model(image_tensor)
+                _, predicted = torch.max(output, 1)
+                predicted_label = predicted.item()
+
+            qtw.QMessageBox.information(self, "Prediction", f"Predicted Label: {predicted_label}")
+
+        except Exception as e:
+            qtw.QMessageBox.critical(self, "Error", f"Failed to predict: {str(e)}")
 
 
 class ActivityOptionsWindow(qtw.QWidget):
@@ -175,12 +246,12 @@ class ActivityOptionsWindow(qtw.QWidget):
             qtw.QMessageBox.information(self, "Success", f"Model {model_name} loaded successfully for testing.")
 
             # Use the CSV file path selected during the load data operation
-            self.displayTrainingImages(self.file_path)
+            self.displayTrainingImages(self.file_path, model, model_name)
 
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to load the model: {str(e)}")
 
-    def displayTrainingImages(self, filepath):
+    def displayTrainingImages(self, filepath, model=None, model_name=None):
         try:
             data = pd.read_csv(filepath)
             images = []
@@ -191,9 +262,9 @@ class ActivityOptionsWindow(qtw.QWidget):
                 pixels = data.iloc[i, 1:].values
                 image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
                 qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
-                images.append((label, QPixmap.fromImage(qimage)))
+                images.append((label, QPixmap.fromImage(qimage), image_array))
 
-            self.image_display_window = ImageDisplayWindow(images)
+            self.image_display_window = ImageDisplayWindow(images, model, model_name)
             self.image_display_window.show()
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to load images: {str(e)}")
@@ -239,50 +310,11 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     # Method to view the images after loading and converting the data into images
     def viewConvertedImages(self):
-        # Showing a warning message if the user has not loaded any data
         if not self.images:
             qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
             return
 
-        # Clear any existing image display layout
-        if hasattr(self, 'image_display_layout') and hasattr(self, 'search_bar'):
-            for i in reversed(range(self.image_display_layout.count())):
-                self.image_display_layout.itemAt(i).widget().setParent(None)
-
-            self.updateImageDisplay(self.filtered_images)
-            self.show()
-            return
-
-        # Creating a grid layout for the loaded images to be displayed
-        self.image_display_layout = qtw.QGridLayout()
-
-        # Creating a scroll area to contain the grid layout
-        scroll_area = qtw.QScrollArea()
-        scroll_images_widget = qtw.QWidget()
-        scroll_images_widget.setLayout(self.image_display_layout)
-
-        # Creating search bar
-        self.search_bar = qtw.QLineEdit(self)
-        self.search_bar.setPlaceholderText("Search by label")
-        self.search_bar.textChanged.connect(self.filterImages)
-        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
-
-        # Add the search bar to the layout
-        self.layout().insertWidget(1, self.search_bar)  # Insert above the scroll area
-
-        # Add the images to the layout
-        self.updateImageDisplay(self.filtered_images)
-
-        scroll_area.setWidget(scroll_images_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFixedHeight(400)
-
-        self.layout().addWidget(scroll_area)
-        self.scroll_area = scroll_area
-        self.show()
-
-        # Connect scroll event to load more images
-        scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
+        self.displayTrainingImages(self.file_path)
 
     # Method to filter images based on the search query
     def filterImages(self):

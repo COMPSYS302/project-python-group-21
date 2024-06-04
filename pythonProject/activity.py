@@ -119,19 +119,22 @@ class ClickableLabel(qtw.QLabel):
 class TestModelWindow(qtw.QWidget):
     def __init__(self, images, model, model_name):
         super().__init__()
+        # Setting up the basics of the page
+        # It will display 100 images to prevent lagging
         self.images = images
         self.model = model
         self.model_name = model_name
-        self.page_size = 100  # Number of images per page
+        self.page_size = 100
         self.current_page = 0
         self.filtered_images = self.images
         self.total_pages = (len(self.images) + self.page_size - 1)
-
+        # Matching the apps design
         self.setWindowTitle("Test Model")
         self.setGeometry(300, 100, 800, 600)
         self.setStyleSheet("background-color: #8C52FF;")
 
         self.layout = qtw.QVBoxLayout(self)
+
         self.search_bar = qtw.QLineEdit(self)
         self.search_bar.setPlaceholderText("Search by predicted value")
         self.search_bar.setStyleSheet(activitystyles.line_edit_style)
@@ -149,21 +152,28 @@ class TestModelWindow(qtw.QWidget):
 
         self.layout.addWidget(scroll_area)
 
-
         # Page navigation layout
-        self.pagination_layout = qtw.QHBoxLayout()
+        self.test_bottom_layout = qtw.QHBoxLayout()
         self.prev_button = qtw.QPushButton("Previous")
         self.next_button = qtw.QPushButton("Next")
 
+        # Setting the buttons designs
         self.prev_button.setStyleSheet(activitystyles.button_style)
         self.next_button.setStyleSheet(activitystyles.button_style)
 
-        self.pagination_layout.addWidget(self.prev_button)
-        self.pagination_layout.addWidget(self.next_button)
-        self.layout.addLayout(self.pagination_layout)
-
+        # Adding the buttons to the layout
+        self.test_bottom_layout.addWidget(self.prev_button)
+        self.test_bottom_layout.addWidget(self.next_button)
+        self.layout.addLayout(self.test_bottom_layout)
+        # When the buttons are clicked, it will perform the respective functions
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
+
+        self.camera_button = qtw.QPushButton("Camera")
+        camera_icon = QIcon("camera.png")
+        self.camera_button.setIcon(camera_icon)
+        self.camera_button.setStyleSheet(activitystyles.button_style)
+        self.layout.addWidget(self.camera_button, alignment=Qt.AlignCenter)
 
         self.display_images()
 
@@ -182,16 +192,18 @@ class TestModelWindow(qtw.QWidget):
             label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
             self.image_display_layout.addWidget(label_widget, (i - start_index) // 10, (i - start_index) % 10)
 
+    # Previous page function to switch to the previous page
     def prev_page(self):
         if self.current_page > 0:
             self.current_page -= 1
             self.display_images()
 
+    # Next page function to switch to the next page
     def next_page(self):
         if self.current_page < (len(self.filtered_images) + self.page_size - 1) // self.page_size - 1:
             self.current_page += 1
             self.display_images()
-
+    # Function to filter the images when searched
     def filter_images(self):
         query = self.search_bar.text()
         if query.isdigit():
@@ -206,16 +218,35 @@ class TestModelWindow(qtw.QWidget):
 class ActivityOptionsWindow(qtw.QWidget):
 
     def returnToHome(self):
-        response = qtw.QMessageBox.question(self, 'Return to Home',
-                                            'Returning will clear loaded data. Do you want to continue?',
-                                            qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No)
-        if response == qtw.QMessageBox.Yes:
+        # Asks user if they want to return to home page
+        msg = qtw.QMessageBox(self)
+        msg.setWindowTitle("Return to Home")
+        msg.setText("Returning will clear loaded data. Do you want to continue?")
+        msg.setIcon(qtw.QMessageBox.Question)
+        msg.setStyleSheet(activitystyles.msg_box_design)
+
+        yes_button = qtw.QPushButton("Yes")
+        yes_button.setStyleSheet(activitystyles.msg_box_button)
+        msg.addButton(yes_button, qtw.QMessageBox.YesRole)
+
+        no_button = qtw.QPushButton("No")
+        no_button.setStyleSheet(activitystyles.msg_box_button)
+        msg.addButton(no_button, qtw.QMessageBox.NoRole)
+
+        response = msg.exec_()
+        # If yes was clicked
+        if response == 0:
             self.prevWindow.show()
             self.close()
 
     def openTrainingWindow(self):
         if not self.images:
-            qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
+            msg = qtw.QMessageBox(self)
+            msg.setWindowTitle("Warning")
+            msg.setText("No data loaded. Please load data first.")
+            msg.setIcon(qtw.QMessageBox.Information)
+            msg.setStyleSheet(activitystyles.msg_box_design)
+            msg.exec_()
         else:
             self.training_window = TrainingWindow(self, self.file_path)
             self.training_window.show()
@@ -244,7 +275,11 @@ class ActivityOptionsWindow(qtw.QWidget):
 
             model.load_state_dict(model_state_dict)
             model.eval()
-            qtw.QMessageBox.information(self, "Success", f"Model {model_name} loaded successfully for testing.")
+            msg = qtw.QMessageBox(self)
+            msg.setWindowTitle("Success")
+            msg.setText(f"Model {model_name} loaded successfully for testing.")
+            msg.setStyleSheet(activitystyles.msg_box_design)
+            msg.exec_()
 
             self.model = model
             self.model_name = model_name
@@ -288,7 +323,13 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.displayed_images_count = len(self.filtered_images)
         self.loadingProgressBar.hide()
         self.stopButton.hide()
-        qtw.QMessageBox.information(self, "Success!", "Data loaded successfully.")
+
+        msg = qtw.QMessageBox(self)
+        msg.setWindowTitle("Success!")
+        msg.setText("Data loaded successfully.")
+        msg.setIcon(qtw.QMessageBox.Information)
+        msg.setStyleSheet(activitystyles.msg_box_design)
+        msg.exec_()
 
     def stopLoading(self):
         if hasattr(self, 'loading_thread'):
@@ -298,7 +339,12 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     def viewConvertedImages(self, model=None, model_name=None):
         if not self.images:
-            qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
+            msg = qtw.QMessageBox(self)
+            msg.setWindowTitle("Warning")
+            msg.setText("No data loaded. Please load data first.")
+            msg.setIcon(qtw.QMessageBox.Information)
+            msg.setStyleSheet(activitystyles.msg_box_design)
+            msg.exec_()
             return
 
         self.image_display_layout = qtw.QGridLayout()
@@ -337,11 +383,21 @@ class ActivityOptionsWindow(qtw.QWidget):
                 self.displayed_images_count = len(self.filtered_images)
             else:
                 self.filtered_images = []
-                qtw.QMessageBox.warning(self, "Error", "Please enter a label between 0 and 35.")
+                msg = qtw.QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("Please enter a label between 0 and 35.")
+                msg.setIcon(qtw.QMessageBox.Information)
+                msg.setStyleSheet(activitystyles.msg_box_design)
+                msg.exec_()
         else:
             if query:
                 self.filtered_images = []
-                qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 35.")
+                msg = qtw.QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("Please enter a valid digit between 0 and 35.")
+                msg.setIcon(qtw.QMessageBox.Information)
+                msg.setStyleSheet(activitystyles.msg_box_design)
+                msg.exec_()
             else:
                 self.filtered_images = self.images[:INITIAL_LOAD_SIZE]
                 self.displayed_images_count = len(self.filtered_images)

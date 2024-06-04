@@ -99,6 +99,60 @@ class ActivityStyles:
                     }
                 """
 
+        self.msg_box_design = """
+                    QMessageBox {
+                        background-color: #8C52FF;
+                        color: white;
+                        font-size: 14px;
+                    }
+                    QMessageBox QLabel {
+                        font-size: 15px;
+                        font-weight: bold;
+                        color: white;
+                    }
+                    QMessageBox QPushButton {
+                        background-color: white;
+                        color: #3D0289;
+                        border-style: inset;
+                        border-width: 2px;
+                        border-radius: 5px;
+                        border-color: beige;
+                        font: bold 14px;
+                        min-width: 4em;
+                        padding: 10px;
+                        margin: 10px;
+                    }
+                    QMessageBox QPushButton:hover {
+                        background-color: #3D0289;
+                        color: white;
+                    }
+                    QMessageBox QPushButton:pressed {
+                        background-color: #545454;
+                    }
+                """
+
+        self.msg_box_button = """
+            QPushButton {
+                background-color: white;
+                color: #3D0289;
+                border-style: inset;
+                border-width: 2px;
+                border-radius: 5px;
+                border-color: beige;
+                font: bold 14px;
+                min-width: 4em;
+                padding: 10px;
+                margin: 10px;
+            }
+            QPushButton:hover {
+                background-color: #3D0289;
+                color: white;
+            }
+            QPushButton:pressed {
+                background-color: #545454;
+            }
+        """
+
 
 # Styles for the Training Window
 class TrainingStyles:

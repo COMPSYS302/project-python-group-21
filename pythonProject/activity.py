@@ -128,7 +128,7 @@ class TestModelWindow(qtw.QWidget):
 
         self.setWindowTitle("Test Model")
         self.setGeometry(300, 100, 800, 600)
-
+        self.setStyleSheet("background-color: #8C52FF;")
         self.layout = qtw.QVBoxLayout(self)
         self.image_display_layout = qtw.QGridLayout()
         scroll_area = qtw.QScrollArea()
@@ -144,7 +144,9 @@ class TestModelWindow(qtw.QWidget):
         # Pagination controls
         self.pagination_layout = qtw.QHBoxLayout()
         self.prev_button = qtw.QPushButton("Previous")
+        self.prev_button.setStyleSheet(activitystyles.button_style)
         self.next_button = qtw.QPushButton("Next")
+        self.next_button.setStyleSheet(activitystyles.button_style)
         self.pagination_layout.addWidget(self.prev_button)
         self.pagination_layout.addWidget(self.next_button)
         self.layout.addLayout(self.pagination_layout)
@@ -335,14 +337,11 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.scroll_area.setWidget(scroll_images_widget)
 
     def loadMoreImages(self):
-<<<<<<< Updated upstream
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
             next_images = self.filtered_images[
                           self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
-=======
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum() and not self.search_bar.text().isdigit():
             next_images = self.images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
->>>>>>> Stashed changes
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, self.model, self.model_name, append=True)

@@ -11,12 +11,12 @@ import PyQt5.QtCore as qtc
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 import logging
-import cv2  # Import OpenCV
 
 from train import TrainingWindow  # Ensure this import is correct
 from styles import ActivityStyles
 from alexnet import build_alexnet
 from inception import build_inception_v3
+from camera_utils import CameraHandler  # Import the camera handler
 
 activitystyles = ActivityStyles()
 
@@ -265,68 +265,8 @@ class TestModelWindow(qtw.QWidget):
         return super().eventFilter(obj, event)
 
     def open_camera(self):
-        if not self.model:
-            qtw.QMessageBox.critical(self, "Error", "No model loaded. Please load a model first.")
-            return
-
-        cv_window_name = 'Press "c" to capture or "q" to quit'
-        cv2.namedWindow(cv_window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(cv_window_name, 640, 480)
-
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            qtw.QMessageBox.critical(self, "Error", "Failed to open the camera.")
-            return
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                qtw.QMessageBox.warning(self, "Warning", "Failed to capture video from camera.")
-                break
-
-            cv2.imshow(cv_window_name, frame)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                break
-            elif key == ord('c'):
-                bbox = self.get_bounding_box(frame)
-                cropped_frame = self.crop_to_bbox(frame, bbox)
-                processed_frame = self.preprocess_frame(cropped_frame)
-                label = self.predict_hand_sign(processed_frame)
-                self.display_prediction(frame, label, bbox)
-                if cv2.waitKey(0) & 0xFF == ord('q'):
-                    break
-
-        cap.release()
-        cv2.destroyWindow(cv_window_name)
-
-    def get_bounding_box(self, frame):
-        height, width, _ = frame.shape
-        box_size = int(min(height, width) * 0.5)
-        x_center, y_center = width // 2, height // 2
-        return (x_center - box_size // 2, y_center - box_size // 2, box_size, box_size)
-
-    def crop_to_bbox(self, frame, bbox):
-        x, y, w, h = bbox
-        return frame[y:y+h, x:x+w]
-
-    def preprocess_frame(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        resized = cv2.resize(gray, (28, 28))  # Adjust according to the model input size
-        normalized = resized / 255.0  # Normalize the image
-        return normalized.reshape(1, 1, 28, 28)  # Adjust shape if necessary for the model input
-
-    def predict_hand_sign(self, image):
-        image_tensor = torch.tensor(image, dtype=torch.float).unsqueeze(0)
-        output = self.model(image_tensor)
-        _, predicted = torch.max(output.data, 1)
-        return predicted.item()
-
-    def display_prediction(self, frame, label, bbox):
-        x, y, w, h = bbox
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(frame, f'Label: {label}', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-        cv2.imshow("Prediction", frame)
+        camera_handler = CameraHandler(self.model)
+        camera_handler.open_camera()
 
 class ActivityOptionsWindow(qtw.QWidget):
     def returnToHome(self):
@@ -372,7 +312,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     def loadAndTestModel(self, model_path):
         try:
-            model_info = torch.load(model_path)
+            model_info = torch.load(model_path, map_location=self.device)  # Load to CPU first
             model_name = model_info['model_name']
             model_state_dict = model_info['model_state_dict']
 
@@ -384,7 +324,9 @@ class ActivityOptionsWindow(qtw.QWidget):
                 raise ValueError("Unknown model name")
 
             model.load_state_dict(model_state_dict)
+            model.to(self.device)
             model.eval()
+
             msg = qtw.QMessageBox(self)
             msg.setWindowTitle("Success")
             msg.setText(f"Model {model_name} loaded successfully for testing.")
@@ -550,6 +492,8 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     def __init__(self, previouswindow):
         super().__init__()
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.prevWindow = previouswindow
         self.data = None

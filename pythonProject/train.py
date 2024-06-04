@@ -16,6 +16,7 @@ trainingstyles = TrainingStyles()
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
 
@@ -123,9 +124,9 @@ class TrainingWindow(qtw.QWidget):
 
     def startTraining(self):
         model_name = self.cnn_dropdown.currentText()
-        batch_size = self.batch_size_slider.value()
-        epochs = self.epochs_slider.value()
-        validation_split = self.train_test_ratio_slider.value() / 100.0
+        batch_size = int(self.batch_size_input.text())
+        epochs = int(self.epochs_input.text())
+        validation_split = int(self.train_test_ratio_input.text()) / 100.0
 
         if model_name in ["AlexNet", "InceptionV3"] and self.file_path:
             logging.debug(f"Starting training with model: {model_name}, batch size: {batch_size}, epochs: {epochs}, validation split: {validation_split}")
@@ -147,7 +148,7 @@ class TrainingWindow(qtw.QWidget):
         self.file_path = file_path
         self.setWindowTitle('Sign-SYS Training')
         self.setWindowIcon(QIcon('signsysweblogoturq.png'))
-        self.setGeometry(950, 450, 720, 600)
+        self.setGeometry(950, 350, 720, 700)
         self.setStyleSheet('background-color: #8C52FF;')
 
         training_layout = qtw.QVBoxLayout()
@@ -181,9 +182,12 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignTop)
         training_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignCenter)
 
+        # Train/Validation Ratio Section
         self.validation_text = qtw.QLabel("Select Train/Validation Ratio")
         self.validation_text.setStyleSheet(trainingstyles.title_styles)
         training_layout.addWidget(self.validation_text, alignment=Qt.AlignCenter)
+
+        validation_layout = qtw.QVBoxLayout()
 
         self.train_test_ratio_slider = qtw.QSlider(Qt.Horizontal)
         self.train_test_ratio_slider.setStyleSheet(trainingstyles.slider_styles)
@@ -193,16 +197,26 @@ class TrainingWindow(qtw.QWidget):
         self.train_test_ratio_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.train_test_ratio_slider.setTickInterval(10)
         self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-        self.train_test_ratio_slider_label = qtw.QLabel(f'Train/Test Ratio: {self.train_test_ratio_slider.value()}%',
-                                                        self)
+
+        self.train_test_ratio_slider_label = qtw.QLabel(f'Train/Test Ratio: '
+                                                        f'{self.train_test_ratio_slider.value()}%', self)
         self.train_test_ratio_slider_label.setStyleSheet(trainingstyles.label_styles)
+        self.train_test_ratio_input = qtw.QLineEdit()
+        self.train_test_ratio_input.setFixedWidth(60)
+        self.train_test_ratio_input.setText(str(self.train_test_ratio_slider.value()))
 
-        training_layout.addWidget(self.train_test_ratio_slider_label, alignment=Qt.AlignCenter)
-        training_layout.addWidget(self.train_test_ratio_slider, alignment=Qt.AlignCenter)
+        validation_layout.addWidget(self.train_test_ratio_slider_label, alignment=Qt.AlignCenter)
+        validation_layout.addWidget(self.train_test_ratio_input, alignment=Qt.AlignCenter)
+        validation_layout.addWidget(self.train_test_ratio_slider)
 
+        training_layout.addLayout(validation_layout)
+
+        # Batch Size Section
         self.batchsize_text = qtw.QLabel("Select a batch size")
         self.batchsize_text.setStyleSheet(trainingstyles.title_styles)
         training_layout.addWidget(self.batchsize_text, alignment=Qt.AlignCenter)
+
+        batchsize_layout = qtw.QVBoxLayout()
 
         self.batch_size_slider = qtw.QSlider(Qt.Horizontal)
         self.batch_size_slider.setStyleSheet(trainingstyles.slider_styles)
@@ -212,15 +226,25 @@ class TrainingWindow(qtw.QWidget):
         self.batch_size_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.batch_size_slider.setTickInterval(32)
         self.batch_size_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
+
         self.batch_size_slider_label = qtw.QLabel(f'Batch Size: {self.batch_size_slider.value()}', self)
         self.batch_size_slider_label.setStyleSheet(trainingstyles.label_styles)
+        self.batch_size_input = qtw.QLineEdit()
+        self.batch_size_input.setFixedWidth(60)
+        self.batch_size_input.setText(str(self.batch_size_slider.value()))
 
-        training_layout.addWidget(self.batch_size_slider_label, alignment=Qt.AlignCenter)
-        training_layout.addWidget(self.batch_size_slider, alignment=Qt.AlignCenter)
+        batchsize_layout.addWidget(self.batch_size_slider_label, alignment=Qt.AlignCenter)
+        batchsize_layout.addWidget(self.batch_size_input, alignment=Qt.AlignCenter)
+        batchsize_layout.addWidget(self.batch_size_slider)
 
+        training_layout.addLayout(batchsize_layout)
+
+        # Epochs Section
         self.epochs_text = qtw.QLabel("Select amount of epochs")
         self.epochs_text.setStyleSheet(trainingstyles.title_styles)
         training_layout.addWidget(self.epochs_text, alignment=Qt.AlignCenter)
+
+        epochs_layout = qtw.QVBoxLayout()
 
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
         self.epochs_slider.setStyleSheet(trainingstyles.slider_styles)
@@ -230,18 +254,39 @@ class TrainingWindow(qtw.QWidget):
         self.epochs_slider.setTickPosition(qtw.QSlider.TicksBelow)
         self.epochs_slider.setTickInterval(10)
         self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
+
         self.epochs_slider_label = qtw.QLabel(f'Epochs: {self.epochs_slider.value()}', self)
         self.epochs_slider_label.setStyleSheet(trainingstyles.label_styles)
+        self.epochs_input = qtw.QLineEdit()
+        self.epochs_input.setFixedWidth(60)
+        self.epochs_input.setText(str(self.epochs_slider.value()))
 
-        training_layout.addWidget(self.epochs_slider_label, alignment=Qt.AlignCenter)
-        training_layout.addWidget(self.epochs_slider, alignment=Qt.AlignCenter)
+        epochs_layout.addWidget(self.epochs_slider_label, alignment=Qt.AlignCenter)
+        epochs_layout.addWidget(self.epochs_input, alignment=Qt.AlignCenter)
+        epochs_layout.addWidget(self.epochs_slider)
+
+        training_layout.addLayout(epochs_layout)
 
         self.train_test_ratio_slider.valueChanged.connect(
-            lambda value: self.train_test_ratio_slider_label.setText(f'Train/Test Ratio: {value}%'))
+            lambda value: self.update_slider_value(self.train_test_ratio_slider, self.train_test_ratio_slider_label, self.train_test_ratio_input, 'Train/Test Ratio', value))
         self.batch_size_slider.valueChanged.connect(
-            lambda value: self.batch_size_slider_label.setText(f'Batch Size: {value}'))
-        self.epochs_slider.valueChanged.connect(lambda value: self.epochs_slider_label.setText(f'Epochs: {value}'))
+            lambda value: self.update_slider_value(self.batch_size_slider, self.batch_size_slider_label, self.batch_size_input, 'Batch Size', value))
+        self.epochs_slider.valueChanged.connect(lambda value: self.update_slider_value(self.epochs_slider, self.epochs_slider_label, self.epochs_input, 'Epochs', value))
 
-        self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-        self.batch_size_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
-        self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
+        self.train_test_ratio_input.editingFinished.connect(
+            lambda: self.update_input_value(self.train_test_ratio_input, self.train_test_ratio_slider))
+        self.batch_size_input.editingFinished.connect(
+            lambda: self.update_input_value(self.batch_size_input, self.batch_size_slider))
+        self.epochs_input.editingFinished.connect(
+            lambda: self.update_input_value(self.epochs_input, self.epochs_slider))
+
+    def update_slider_value(self, slider, label, input, label_text, value):
+        label.setText(f'{label_text}: {value}')
+        input.setText(str(value))
+
+    def update_input_value(self, input, slider):
+        try:
+            value = int(input.text())
+            slider.setValue(value)
+        except ValueError:
+            pass  # Invalid input, ignore

@@ -119,6 +119,70 @@ class ClickableLabel(qtw.QLabel):
             qtw.QMessageBox.critical(self, "Error", f"Failed to predict: {str(e)}")
 
 
+class TestModelWindow(qtw.QWidget):
+    def __init__(self, images, model, model_name):
+        super().__init__()
+        self.images = images
+        self.model = model
+        self.model_name = model_name
+        self.page_size = 100  # Number of images per page
+        self.current_page = 0
+        self.total_pages = (len(images) + self.page_size - 1) // self.page_size
+
+        self.setWindowTitle("Test Model")
+        self.setGeometry(300, 100, 800, 600)
+
+        self.layout = qtw.QVBoxLayout(self)
+        self.image_display_layout = qtw.QGridLayout()
+        scroll_area = qtw.QScrollArea()
+        scroll_images_widget = qtw.QWidget()
+        scroll_images_widget.setLayout(self.image_display_layout)
+
+        scroll_area.setWidget(scroll_images_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFixedHeight(400)
+
+        self.layout.addWidget(scroll_area)
+
+        # Pagination controls
+        self.pagination_layout = qtw.QHBoxLayout()
+        self.prev_button = qtw.QPushButton("Previous")
+        self.next_button = qtw.QPushButton("Next")
+        self.pagination_layout.addWidget(self.prev_button)
+        self.pagination_layout.addWidget(self.next_button)
+        self.layout.addLayout(self.pagination_layout)
+
+        self.prev_button.clicked.connect(self.prev_page)
+        self.next_button.clicked.connect(self.next_page)
+
+        self.display_images()
+
+    def display_images(self):
+        # Clear current images
+        for i in reversed(range(self.image_display_layout.count())):
+            widget_to_remove = self.image_display_layout.itemAt(i).widget()
+            self.image_display_layout.removeWidget(widget_to_remove)
+            widget_to_remove.setParent(None)
+
+        # Display images for the current page
+        start_index = self.current_page * self.page_size
+        end_index = min(start_index + self.page_size, len(self.images))
+        for i in range(start_index, end_index):
+            label, pixmap, image_array = self.images[i]
+            label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
+            self.image_display_layout.addWidget(label_widget, (i - start_index) // 10, (i - start_index) % 10)
+
+    def prev_page(self):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.display_images()
+
+    def next_page(self):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self.display_images()
+
+
 class ActivityOptionsWindow(qtw.QWidget):
 
     def returnToHome(self):
@@ -165,27 +229,18 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.model = model
             self.model_name = model_name
 
-            self.viewConvertedImages(model, model_name)
+            self.openTestModelWindowWithImages(model, model_name)
 
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to load the model: {str(e)}")
 
-    def displayTrainingImages(self, filepath, model=None, model_name=None):
-        try:
-            data = pd.read_csv(filepath)
-            images = []
+    def openTestModelWindowWithImages(self, model, model_name):
+        if not self.images:
+            qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
+            return
 
-            for i in range(len(data)):
-                label = data.iloc[i, 0]
-                label = label_remap.get(label, label)
-                pixels = data.iloc[i, 1:].values
-                image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
-                qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
-                images.append((label, QPixmap.fromImage(qimage), image_array))
-
-            self.updateImageDisplay(images, model, model_name)
-        except Exception as e:
-            qtw.QMessageBox.critical(self, "Error", f"Failed to load images: {str(e)}")
+        self.test_model_window = TestModelWindow(self.images, model, model_name)
+        self.test_model_window.show()
 
     def loadFile(self):
         fname, _ = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
@@ -279,7 +334,8 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
-            next_images = self.filtered_images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+            next_images = self.filtered_images[
+                          self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, self.model, self.model_name, append=True)
@@ -296,7 +352,8 @@ class ActivityOptionsWindow(qtw.QWidget):
             else:
                 label_widget = qtw.QLabel()
                 label_widget.setPixmap(pixmap)
-            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10), self.image_display_layout.count() % 10)
+            self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
+                                                self.image_display_layout.count() % 10)
 
     def __init__(self, previouswindow):
         super().__init__()

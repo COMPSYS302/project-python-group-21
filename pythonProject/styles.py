@@ -108,6 +108,7 @@ class TrainingStyles:
                                 font-size: 30px; 
                                 color: white;     
                                 font-weight: bold;
+                                margin: 30px;
                             }
                         """
         self.combobox_style = """
@@ -136,8 +137,8 @@ class TrainingStyles:
 
                             QComboBox::down-arrow {
                                 image: url(dropdown.png);
-                                width: 10px;
-                                height: 10px;
+                                width: 20px;
+                                height: 20px;
                             }
 
                             QComboBox QAbstractItemView {
@@ -154,3 +155,22 @@ class TrainingStyles:
                                         font-weight: bold;
                                     }
                                 """
+        self.slider_styles = """
+                                QSlider {
+                                        min-width: 400px;
+                                        margin-bottom: 20px;
+                                        }
+                                QSlider:handle:horizontal {
+                                        background-color: #3D0289;
+                                        }
+
+                                
+        """
+
+        self.label_styles = """
+                               QLabel { 
+                                    font-size: 15px;
+                                    color: white;
+                                    font-weight: bold;  
+                               }
+        """

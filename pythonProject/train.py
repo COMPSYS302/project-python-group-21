@@ -186,6 +186,7 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addWidget(self.validation_text, alignment=Qt.AlignCenter)
 
         self.train_test_ratio_slider = qtw.QSlider(Qt.Horizontal)
+        self.train_test_ratio_slider.setStyleSheet(trainingstyles.slider_styles)
         self.train_test_ratio_slider.setMinimum(1)
         self.train_test_ratio_slider.setMaximum(99)
         self.train_test_ratio_slider.setValue(50)
@@ -194,6 +195,7 @@ class TrainingWindow(qtw.QWidget):
         self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.train_test_ratio_slider_label = qtw.QLabel(f'Train/Test Ratio: {self.train_test_ratio_slider.value()}%',
                                                         self)
+        self.train_test_ratio_slider_label.setStyleSheet(trainingstyles.label_styles)
 
         training_layout.addWidget(self.train_test_ratio_slider_label, alignment=Qt.AlignCenter)
         training_layout.addWidget(self.train_test_ratio_slider, alignment=Qt.AlignCenter)
@@ -203,13 +205,15 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addWidget(self.batchsize_text, alignment=Qt.AlignCenter)
 
         self.batch_size_slider = qtw.QSlider(Qt.Horizontal)
+        self.batch_size_slider.setStyleSheet(trainingstyles.slider_styles)
         self.batch_size_slider.setMinimum(1)
         self.batch_size_slider.setMaximum(256)
         self.batch_size_slider.setValue(32)
         self.batch_size_slider.setTickPosition(qtw.QSlider.TicksBelow)
-        self.batch_size_slider.setTickInterval(1000)
+        self.batch_size_slider.setTickInterval(32)
         self.batch_size_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.batch_size_slider_label = qtw.QLabel(f'Batch Size: {self.batch_size_slider.value()}', self)
+        self.batch_size_slider_label.setStyleSheet(trainingstyles.label_styles)
 
         training_layout.addWidget(self.batch_size_slider_label, alignment=Qt.AlignCenter)
         training_layout.addWidget(self.batch_size_slider, alignment=Qt.AlignCenter)
@@ -219,6 +223,7 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addWidget(self.epochs_text, alignment=Qt.AlignCenter)
 
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
+        self.epochs_slider.setStyleSheet(trainingstyles.slider_styles)
         self.epochs_slider.setMinimum(1)
         self.epochs_slider.setMaximum(30)
         self.epochs_slider.setValue(5)
@@ -226,6 +231,7 @@ class TrainingWindow(qtw.QWidget):
         self.epochs_slider.setTickInterval(10)
         self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
         self.epochs_slider_label = qtw.QLabel(f'Epochs: {self.epochs_slider.value()}', self)
+        self.epochs_slider_label.setStyleSheet(trainingstyles.label_styles)
 
         training_layout.addWidget(self.epochs_slider_label, alignment=Qt.AlignCenter)
         training_layout.addWidget(self.epochs_slider, alignment=Qt.AlignCenter)

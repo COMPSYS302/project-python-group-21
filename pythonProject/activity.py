@@ -6,7 +6,6 @@ import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 import logging
-import os
 
 from train import TrainingWindow  # Ensure this import is correct
 from styles import ActivityStyles
@@ -15,10 +14,9 @@ from inception import build_inception_v3
 
 activitystyles = ActivityStyles()
 
-# Define a constant for the number of images to load per batch
 IMAGES_BATCH_SIZE = 100
+INITIAL_LOAD_SIZE = 200
 
-# Define a dictionary to remap the labels
 label_remap = {
     26: 35,
     27: 26,
@@ -32,7 +30,6 @@ label_remap = {
     35: 31
 }
 
-# Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -264,7 +261,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
     def onDataLoaded(self, images):
         self.images = images
-        self.filtered_images = images[:IMAGES_BATCH_SIZE]
+        self.filtered_images = images[:INITIAL_LOAD_SIZE]
         self.displayed_images_count = len(self.filtered_images)
         self.loadingProgressBar.hide()
         self.stopButton.hide()
@@ -281,18 +278,25 @@ class ActivityOptionsWindow(qtw.QWidget):
             qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
             return
 
-        if hasattr(self, 'image_display_layout') and hasattr(self, 'search_bar'):
-            for i in reversed(range(self.image_display_layout.count())):
-                self.image_display_layout.itemAt(i).widget().setParent(None)
-
-            self.updateImageDisplay(self.filtered_images, model, model_name)
-            self.show()
-            return
-
         self.image_display_layout = qtw.QGridLayout()
-        scroll_area = qtw.QScrollArea()
+        self.scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
         scroll_images_widget.setLayout(self.image_display_layout)
+
+        self.updateImageDisplay(self.filtered_images, model, model_name)
+
+        self.scroll_area.setWidget(scroll_images_widget)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFixedHeight(400)
+
+        if hasattr(self, 'scroll_area_widget'):
+            self.layout().replaceWidget(self.scroll_area_widget, self.scroll_area)
+            self.scroll_area_widget.deleteLater()
+        else:
+            self.layout().addWidget(self.scroll_area)
+
+        self.scroll_area_widget = self.scroll_area
+        self.scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
 
         self.search_bar = qtw.QLineEdit(self)
         self.search_bar.setPlaceholderText("Search by label")
@@ -300,17 +304,6 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.search_bar.setStyleSheet(activitystyles.line_edit_style)
 
         self.layout().insertWidget(1, self.search_bar)
-        self.updateImageDisplay(self.filtered_images, model, model_name)
-
-        scroll_area.setWidget(scroll_images_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFixedHeight(400)
-
-        self.layout().addWidget(scroll_area)
-        self.scroll_area = scroll_area
-        self.show()
-
-        scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
 
     def filterImages(self):
         query = self.search_bar.text()
@@ -327,15 +320,29 @@ class ActivityOptionsWindow(qtw.QWidget):
                 self.filtered_images = []
                 qtw.QMessageBox.warning(self, "Error", "Please enter a valid digit between 0 and 35.")
             else:
-                self.filtered_images = self.images[:IMAGES_BATCH_SIZE]
+                self.filtered_images = self.images[:INITIAL_LOAD_SIZE]
                 self.displayed_images_count = len(self.filtered_images)
 
-        self.updateImageDisplay(self.filtered_images, self.model, self.model_name)
+        self.viewFilteredImages()
+
+    def viewFilteredImages(self):
+        self.image_display_layout = qtw.QGridLayout()
+        scroll_images_widget = qtw.QWidget()
+        scroll_images_widget.setLayout(self.image_display_layout)
+
+        self.updateImageDisplay(self.filtered_images)
+
+        self.scroll_area.setWidget(scroll_images_widget)
 
     def loadMoreImages(self):
+<<<<<<< Updated upstream
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
             next_images = self.filtered_images[
                           self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+=======
+        if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum() and not self.search_bar.text().isdigit():
+            next_images = self.images[self.displayed_images_count:self.displayed_images_count + IMAGES_BATCH_SIZE]
+>>>>>>> Stashed changes
             self.filtered_images.extend(next_images)
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, self.model, self.model_name, append=True)

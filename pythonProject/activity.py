@@ -11,6 +11,7 @@ import PyQt5.QtCore as qtc
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 import logging
+import cv2  # Import OpenCV
 
 from train import TrainingWindow  # Ensure this import is correct
 from styles import ActivityStyles
@@ -36,7 +37,6 @@ label_remap = {
 }
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class DataLoaderThread(QThread):
     progress = pyqtSignal(int)
@@ -92,7 +92,6 @@ class DataLoaderThread(QThread):
         with QMutexLocker(self.mutex):
             self.stopped = True
 
-
 class ProbabilityWindow(qtw.QWidget):
     def __init__(self, probabilities, predicted_label, pixmap):
         super().__init__()
@@ -124,7 +123,6 @@ class ProbabilityWindow(qtw.QWidget):
         canvas = FigureCanvas(figure)
         layout.addWidget(canvas)
 
-
 class ClickableLabel(qtw.QLabel):
     def __init__(self, label, pixmap, image_array, model, model_name):
         super().__init__()
@@ -155,12 +153,9 @@ class ClickableLabel(qtw.QLabel):
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to predict: {str(e)}")
 
-
 class TestModelWindow(qtw.QWidget):
     def __init__(self, images, model, model_name):
         super().__init__()
-        # Setting up the basics of the page
-        # It will display 100 images to prevent lagging
         self.images = images
         self.model = model
         self.model_name = model_name
@@ -168,7 +163,6 @@ class TestModelWindow(qtw.QWidget):
         self.current_page = 0
         self.filtered_images = self.images
         self.total_pages = (len(self.images) + self.page_size - 1)
-        # Matching the apps design
         self.setWindowTitle("Test Model")
         self.setWindowIcon(QIcon('signsysweblogoturq.png'))
         self.setGeometry(300, 100, 800, 600)
@@ -208,21 +202,22 @@ class TestModelWindow(qtw.QWidget):
         self.test_bottom_layout.addWidget(self.prev_button)
         self.test_bottom_layout.addWidget(self.next_button)
         self.layout.addLayout(self.test_bottom_layout)
-        # When the buttons are clicked, it will perform the respective functions
+
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
-        # To prevent lag, we cache the icons. This avoids reloading them every time
+        # Cache the icons to prevent lag
         self.purple_cam_icon = qtg.QIcon("purple_cam.png")
         self.white_cam_icon = qtg.QIcon("white_cam.png")
 
-        # Camera Button set up.
+        # Camera Button set up
         self.camera_button = qtw.QPushButton("Camera")
         self.camera_button.setIcon(self.purple_cam_icon)
         self.camera_button.setIconSize(qtc.QSize(16, 16))
         self.camera_button.setStyleSheet(activitystyles.button_style)
         self.layout.addWidget(self.camera_button, alignment=Qt.AlignCenter)
         self.camera_button.installEventFilter(self)
+        self.camera_button.clicked.connect(self.open_camera)
 
         self.display_images()
 
@@ -241,19 +236,16 @@ class TestModelWindow(qtw.QWidget):
             label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
             self.image_display_layout.addWidget(label_widget, (i - start_index) // 10, (i - start_index) % 10)
 
-    # Previous page function to switch to the previous page
     def prev_page(self):
         if self.current_page > 0:
             self.current_page -= 1
             self.display_images()
 
-    # Next page function to switch to the next page
     def next_page(self):
         if self.current_page < (len(self.filtered_images) + self.page_size - 1) // self.page_size - 1:
             self.current_page += 1
             self.display_images()
 
-    # Function to filter the images when searched
     def filter_images(self):
         query = self.search_bar.text()
         if query.isdigit():
@@ -272,11 +264,72 @@ class TestModelWindow(qtw.QWidget):
                 self.camera_button.setIcon(self.purple_cam_icon)
         return super().eventFilter(obj, event)
 
+    def open_camera(self):
+        if not self.model:
+            qtw.QMessageBox.critical(self, "Error", "No model loaded. Please load a model first.")
+            return
+
+        cv_window_name = 'Press "c" to capture or "q" to quit'
+        cv2.namedWindow(cv_window_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(cv_window_name, 640, 480)
+
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            qtw.QMessageBox.critical(self, "Error", "Failed to open the camera.")
+            return
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                qtw.QMessageBox.warning(self, "Warning", "Failed to capture video from camera.")
+                break
+
+            cv2.imshow(cv_window_name, frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                break
+            elif key == ord('c'):
+                bbox = self.get_bounding_box(frame)
+                cropped_frame = self.crop_to_bbox(frame, bbox)
+                processed_frame = self.preprocess_frame(cropped_frame)
+                label = self.predict_hand_sign(processed_frame)
+                self.display_prediction(frame, label, bbox)
+                if cv2.waitKey(0) & 0xFF == ord('q'):
+                    break
+
+        cap.release()
+        cv2.destroyWindow(cv_window_name)
+
+    def get_bounding_box(self, frame):
+        height, width, _ = frame.shape
+        box_size = int(min(height, width) * 0.5)
+        x_center, y_center = width // 2, height // 2
+        return (x_center - box_size // 2, y_center - box_size // 2, box_size, box_size)
+
+    def crop_to_bbox(self, frame, bbox):
+        x, y, w, h = bbox
+        return frame[y:y+h, x:x+w]
+
+    def preprocess_frame(self, frame):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(gray, (28, 28))  # Adjust according to the model input size
+        normalized = resized / 255.0  # Normalize the image
+        return normalized.reshape(1, 1, 28, 28)  # Adjust shape if necessary for the model input
+
+    def predict_hand_sign(self, image):
+        image_tensor = torch.tensor(image, dtype=torch.float).unsqueeze(0)
+        output = self.model(image_tensor)
+        _, predicted = torch.max(output.data, 1)
+        return predicted.item()
+
+    def display_prediction(self, frame, label, bbox):
+        x, y, w, h = bbox
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.putText(frame, f'Label: {label}', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        cv2.imshow("Prediction", frame)
 
 class ActivityOptionsWindow(qtw.QWidget):
-
     def returnToHome(self):
-        # Asks user if they want to return to home page
         msg = qtw.QMessageBox(self)
         msg.setWindowTitle("Return to Home")
         msg.setText("Returning will clear loaded data. Do you want to continue?")
@@ -292,7 +345,6 @@ class ActivityOptionsWindow(qtw.QWidget):
         msg.addButton(no_button, qtw.QMessageBox.NoRole)
 
         response = msg.exec_()
-        # If yes was clicked
         if response == 0:
             self.prevWindow.show()
             self.close()

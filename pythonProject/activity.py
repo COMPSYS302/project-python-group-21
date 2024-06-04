@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import PyQt5.QtWidgets as qtw
+import PyQt5.QtGui as qtg
+import PyQt5.QtCore as qtc
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
 import logging
@@ -95,7 +97,9 @@ class ProbabilityWindow(qtw.QWidget):
     def __init__(self, probabilities, predicted_label, pixmap):
         super().__init__()
         self.setWindowTitle("Prediction Probabilities")
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowIcon(QIcon('signsysweblogoturq.png'))
+        self.setGeometry(100, 100, 800, 750)  # X Y Width Height
+        self.setStyleSheet("background-color: #8C52FF;")
         layout = qtw.QVBoxLayout()
         self.setLayout(layout)
 
@@ -106,6 +110,7 @@ class ProbabilityWindow(qtw.QWidget):
 
         # Display the predicted label
         label = qtw.QLabel(f"Predicted Label: {predicted_label}")
+        label.setStyleSheet(activitystyles.regular_text)
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
@@ -114,6 +119,7 @@ class ProbabilityWindow(qtw.QWidget):
         ax.bar(range(len(probabilities)), probabilities)
         ax.set_xlabel('Class')
         ax.set_ylabel('Probability')
+        ax.grid(True)
 
         canvas = FigureCanvas(figure)
         layout.addWidget(canvas)
@@ -164,17 +170,20 @@ class TestModelWindow(qtw.QWidget):
         self.total_pages = (len(self.images) + self.page_size - 1)
         # Matching the apps design
         self.setWindowTitle("Test Model")
+        self.setWindowIcon(QIcon('signsysweblogoturq.png'))
         self.setGeometry(300, 100, 800, 600)
         self.setStyleSheet("background-color: #8C52FF;")
 
         self.layout = qtw.QVBoxLayout(self)
 
+        # Search bar for test window
         self.search_bar = qtw.QLineEdit(self)
         self.search_bar.setPlaceholderText("Search by predicted value")
         self.search_bar.setStyleSheet(activitystyles.line_edit_style)
         self.search_bar.textChanged.connect(self.filter_images)
         self.layout.addWidget(self.search_bar)
 
+        # Test images are displayed here
         self.image_display_layout = qtw.QGridLayout()
         scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
@@ -203,11 +212,17 @@ class TestModelWindow(qtw.QWidget):
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
+        # To prevent lag, we cache the icons. This avoids reloading them every time
+        self.purple_cam_icon = qtg.QIcon("purple_cam.png")
+        self.white_cam_icon = qtg.QIcon("white_cam.png")
+
+        # Camera Button set up.
         self.camera_button = qtw.QPushButton("Camera")
-        camera_icon = QIcon("camera.png")
-        self.camera_button.setIcon(camera_icon)
+        self.camera_button.setIcon(self.purple_cam_icon)
+        self.camera_button.setIconSize(qtc.QSize(16, 16))
         self.camera_button.setStyleSheet(activitystyles.button_style)
         self.layout.addWidget(self.camera_button, alignment=Qt.AlignCenter)
+        self.camera_button.installEventFilter(self)
 
         self.display_images()
 
@@ -248,6 +263,14 @@ class TestModelWindow(qtw.QWidget):
             self.filtered_images = self.images
         self.current_page = 0
         self.display_images()
+
+    def eventFilter(self, obj, event):
+        if obj == self.camera_button:
+            if event.type() == qtc.QEvent.Enter:
+                self.camera_button.setIcon(self.white_cam_icon)
+            elif event.type() == qtc.QEvent.Leave:
+                self.camera_button.setIcon(self.purple_cam_icon)
+        return super().eventFilter(obj, event)
 
 
 class ActivityOptionsWindow(qtw.QWidget):

@@ -153,6 +153,16 @@ class ActivityStyles:
             }
         """
 
+        self.regular_text = """
+                            QLabel {
+                                font-size: 20px;
+                                color: white;     
+                                font-weight: bold;
+                                margin-top: 20px;
+                                margin-bottom: 20px;
+                            }
+                        """
+
 
 # Styles for the Training Window
 class TrainingStyles:

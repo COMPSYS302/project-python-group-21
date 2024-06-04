@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import time
 import torch
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QMutex, QMutexLocker
@@ -88,6 +91,34 @@ class DataLoaderThread(QThread):
             self.stopped = True
 
 
+class ProbabilityWindow(qtw.QWidget):
+    def __init__(self, probabilities, predicted_label, pixmap):
+        super().__init__()
+        self.setWindowTitle("Prediction Probabilities")
+        self.setGeometry(100, 100, 800, 600)
+        layout = qtw.QVBoxLayout()
+        self.setLayout(layout)
+
+        # Display the clicked image zoomed in
+        image_label = qtw.QLabel()
+        image_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio))
+        layout.addWidget(image_label, alignment=Qt.AlignCenter)
+
+        # Display the predicted label
+        label = qtw.QLabel(f"Predicted Label: {predicted_label}")
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        # Plotting the probabilities
+        figure, ax = plt.subplots()
+        ax.bar(range(len(probabilities)), probabilities)
+        ax.set_xlabel('Class')
+        ax.set_ylabel('Probability')
+
+        canvas = FigureCanvas(figure)
+        layout.addWidget(canvas)
+
+
 class ClickableLabel(qtw.QLabel):
     def __init__(self, label, pixmap, image_array, model, model_name):
         super().__init__()
@@ -96,6 +127,7 @@ class ClickableLabel(qtw.QLabel):
         self.image_array = image_array
         self.model = model
         self.model_name = model_name
+        self.pixmap = pixmap
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -107,10 +139,12 @@ class ClickableLabel(qtw.QLabel):
             with torch.no_grad():
                 image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float()
                 output = self.model(image_tensor)
+                probabilities = F.softmax(output, dim=1).numpy().flatten()
                 _, predicted = torch.max(output, 1)
                 predicted_label = predicted.item()
 
-            qtw.QMessageBox.information(self, "Prediction", f"Predicted Label: {predicted_label}")
+            self.prob_window = ProbabilityWindow(probabilities, predicted_label, self.pixmap)
+            self.prob_window.show()
 
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to predict: {str(e)}")
@@ -203,6 +237,7 @@ class TestModelWindow(qtw.QWidget):
         if self.current_page < (len(self.filtered_images) + self.page_size - 1) // self.page_size - 1:
             self.current_page += 1
             self.display_images()
+
     # Function to filter the images when searched
     def filter_images(self):
         query = self.search_bar.text()

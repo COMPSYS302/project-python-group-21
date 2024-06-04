@@ -124,12 +124,20 @@ class TestModelWindow(qtw.QWidget):
         self.model_name = model_name
         self.page_size = 100  # Number of images per page
         self.current_page = 0
-        self.total_pages = (len(images) + self.page_size - 1) // self.page_size
+        self.filtered_images = self.images
+        self.total_pages = (len(self.images) + self.page_size - 1)
 
         self.setWindowTitle("Test Model")
         self.setGeometry(300, 100, 800, 600)
         self.setStyleSheet("background-color: #8C52FF;")
+
         self.layout = qtw.QVBoxLayout(self)
+        self.search_bar = qtw.QLineEdit(self)
+        self.search_bar.setPlaceholderText("Search by predicted value")
+        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+        self.search_bar.textChanged.connect(self.filter_images)
+        self.layout.addWidget(self.search_bar)
+
         self.image_display_layout = qtw.QGridLayout()
         scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
@@ -141,12 +149,15 @@ class TestModelWindow(qtw.QWidget):
 
         self.layout.addWidget(scroll_area)
 
-        # Pagination controls
+
+        # Page navigation layout
         self.pagination_layout = qtw.QHBoxLayout()
         self.prev_button = qtw.QPushButton("Previous")
-        self.prev_button.setStyleSheet(activitystyles.button_style)
         self.next_button = qtw.QPushButton("Next")
+
+        self.prev_button.setStyleSheet(activitystyles.button_style)
         self.next_button.setStyleSheet(activitystyles.button_style)
+
         self.pagination_layout.addWidget(self.prev_button)
         self.pagination_layout.addWidget(self.next_button)
         self.layout.addLayout(self.pagination_layout)
@@ -165,9 +176,9 @@ class TestModelWindow(qtw.QWidget):
 
         # Display images for the current page
         start_index = self.current_page * self.page_size
-        end_index = min(start_index + self.page_size, len(self.images))
+        end_index = min(start_index + self.page_size, len(self.filtered_images))
         for i in range(start_index, end_index):
-            label, pixmap, image_array = self.images[i]
+            label, pixmap, image_array = self.filtered_images[i]
             label_widget = ClickableLabel(label, pixmap, image_array, self.model, self.model_name)
             self.image_display_layout.addWidget(label_widget, (i - start_index) // 10, (i - start_index) % 10)
 
@@ -177,9 +188,19 @@ class TestModelWindow(qtw.QWidget):
             self.display_images()
 
     def next_page(self):
-        if self.current_page < self.total_pages - 1:
+        if self.current_page < (len(self.filtered_images) + self.page_size - 1) // self.page_size - 1:
             self.current_page += 1
             self.display_images()
+
+    def filter_images(self):
+        query = self.search_bar.text()
+        if query.isdigit():
+            predicted_label = int(query)
+            self.filtered_images = [img for img in self.images if img[0] == predicted_label]
+        else:
+            self.filtered_images = self.images
+        self.current_page = 0
+        self.display_images()
 
 
 class ActivityOptionsWindow(qtw.QWidget):

@@ -51,7 +51,8 @@ Once the users have chosen their desired model and parameters, they can click on
 Once the model is trained, the results are stored into a **.pth** file, with the name of the model and the accuracy rate as the file title in a folder called Models within the project working directory.
 
 ### Test
-_Please Note: In order to test the dataset, users must choose a trained model from Sign-Sys Project Working Directory_
+_Please Note: In order to test the dataset, users must choose a trained model from Sign-Sys Project Working Directory._
+
 Once the model is finished training, the users can click on the **Test** button to choose a trained model.
 After choosing the trained model, the users will be taken to a new window, where they can view all the images from their dataset in a window with multiple pages to navigate through by clicking Previous or Next.
 When the users click on any of the images, the software will open a small window with the image, the label prediction for that image and the probability graph for the predicted label.

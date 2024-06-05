@@ -128,7 +128,7 @@ class TrainingWindow(qtw.QWidget):
         epochs = int(self.epochs_input.text())
         validation_split = int(self.train_test_ratio_input.text()) / 100.0
 
-        if model_name in ["AlexNet", "InceptionV3"] and self.file_path:
+        if model_name in ["AlexNet", "InceptionV3", "Sign-SYS Model"] and self.file_path:
             logging.debug(f"Starting training with model: {model_name}, batch size: {batch_size}, epochs: {epochs}, validation split: {validation_split}")
             self.stop_event = threading.Event()
             self.progress_window = TrainingProgressWindow(self.stop_event)
@@ -176,7 +176,7 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addLayout(top_layout)
 
         self.cnn_dropdown = qtw.QComboBox()
-        self.cnn_dropdown.addItems(["-- Select Model --", "AlexNet", "InceptionV3"])
+        self.cnn_dropdown.addItems(["-- Select Model --", "AlexNet", "InceptionV3", "Sign-SYS Model"])
         self.cnn_dropdown.setStyleSheet(trainingstyles.combobox_style)
         self.cnn_dropdown.setItemDelegate(CenterDropdownDelegate(self))
         training_layout.addWidget(self.cnn_dropdown, alignment=Qt.AlignTop)

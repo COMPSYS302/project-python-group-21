@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="527f34ed-8d93-43c8-a6db-70a1f13aa729" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/pythonProject/resnet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pythonProject/signsysmodel.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pythonProject/vgg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Report/CS302 Project 2 Report Form.docx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/alexnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/alexnet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pythonProject/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pythonProject/train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/pythonProject/train_model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,7 +94,8 @@
       <workItem from="1717467265387" duration="5420000" />
       <workItem from="1717486603373" duration="453000" />
       <workItem from="1717504644196" duration="848000" />
-      <workItem from="1717508960046" duration="3807000" />
+      <workItem from="1717508960046" duration="3881000" />
+      <workItem from="1717542950428" duration="4641000" />
     </task>
     <servers />
   </component>
@@ -98,7 +105,7 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/project_python_group_21$styles.coverage" NAME="styles Coverage Results" MODIFIED="1717149302653" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
     <SUITE FILE_PATH="coverage/project_python_group_21$train_model.coverage" NAME="train_model Coverage Results" MODIFIED="1717228242279" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
-    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717512623885" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
+    <SUITE FILE_PATH="coverage/project_python_group_21$main.coverage" NAME="main Coverage Results" MODIFIED="1717546955942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
     <SUITE FILE_PATH="coverage/project_python_group_21$train.coverage" NAME="train Coverage Results" MODIFIED="1717512754104" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
     <SUITE FILE_PATH="coverage/project_python_group_21$activity.coverage" NAME="activity Coverage Results" MODIFIED="1717480040608" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pythonProject" />
   </component>

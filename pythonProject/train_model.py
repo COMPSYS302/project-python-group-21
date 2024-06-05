@@ -9,6 +9,9 @@ import os
 from datetime import datetime
 from alexnet import build_alexnet
 from inception import build_inception_v3
+from resnet import ResNet18
+from vgg import VGG16
+from signsysmodel import SignSysModel
 import logging
 
 # Set up logging
@@ -37,6 +40,10 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
             model = build_alexnet(num_classes=36)
         elif model_name == "InceptionV3":
             model = build_inception_v3(num_classes=36)
+        elif model_name == "Sign-SYS Model":
+            vgg = VGG16(num_classes=36)
+            resnet = ResNet18(num_classes=36)
+            model = SignSysModel(vgg, resnet, num_classes=36)
         else:
             raise ValueError("Unknown model name")
 
@@ -99,7 +106,7 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
 
         model_id = str(uuid.uuid4())
         model_save_path = os.path.join(
-            'C:\\Users\\Harsh\\OneDrive\\Documents\\Android studip\\project-python-group-21\\pythonProject\\Models',
+            'C:\\Users\\lojan\\OneDrive\\Documents\\Uni\\COMPSYS305\\project-python-group-21\\pythonProject\\Models',
             f'{model_name.lower()}_model_{model_id}.pth')
         torch.save({
             'model_state_dict': best_model_state,

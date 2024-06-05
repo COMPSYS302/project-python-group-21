@@ -16,6 +16,9 @@ from train import TrainingWindow  # Ensure this import is correct
 from styles import ActivityStyles
 from alexnet import build_alexnet
 from inception import build_inception_v3
+from resnet import ResNet18
+from vgg import VGG16
+from signsysmodel import SignSysModel
 from camera_utils import CameraHandler  # Import the camera handler
 
 activitystyles = ActivityStyles()
@@ -132,6 +135,8 @@ class ClickableLabel(qtw.QLabel):
         self.model = model
         self.model_name = model_name
         self.pixmap = pixmap
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)  # Ensure the model is on the correct device
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -141,9 +146,9 @@ class ClickableLabel(qtw.QLabel):
         try:
             self.model.eval()
             with torch.no_grad():
-                image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float()
+                image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float().to(self.device)  # Move tensor to device
                 output = self.model(image_tensor)
-                probabilities = F.softmax(output, dim=1).numpy().flatten()
+                probabilities = F.softmax(output, dim=1).cpu().numpy().flatten()  # Move output to CPU before converting to numpy
                 _, predicted = torch.max(output, 1)
                 predicted_label = predicted.item()
 
@@ -316,12 +321,18 @@ class ActivityOptionsWindow(qtw.QWidget):
             model_name = model_info['model_name']
             model_state_dict = model_info['model_state_dict']
 
+            logging.debug(f"Loaded model name: {model_name}")
+
             if model_name == "AlexNet":
                 model = build_alexnet(num_classes=36)
             elif model_name == "InceptionV3":
                 model = build_inception_v3(num_classes=36)
+            elif model_name == "Sign-SYS Model":
+                vgg = VGG16(num_classes=36)
+                resnet = ResNet18(num_classes=36)
+                model = SignSysModel(vgg, resnet, num_classes=36)
             else:
-                raise ValueError("Unknown model name")
+                raise ValueError(f"Unknown model name: {model_name}")
 
             model.load_state_dict(model_state_dict)
             model.to(self.device)
@@ -487,11 +498,8 @@ class ActivityOptionsWindow(qtw.QWidget):
                     self.image_display_layout.itemAt(i).widget().setParent(None)
 
         for i, (label, pixmap, image_array) in enumerate(images):
-            if model:
-                label_widget = ClickableLabel(label, pixmap, image_array, model, model_name)
-            else:
-                label_widget = qtw.QLabel()
-                label_widget.setPixmap(pixmap)
+            label_widget = qtw.QLabel()
+            label_widget.setPixmap(pixmap)
             self.image_display_layout.addWidget(label_widget, (self.image_display_layout.count() // 10),
                                                 self.image_display_layout.count() % 10)
 

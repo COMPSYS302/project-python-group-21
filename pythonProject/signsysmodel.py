@@ -25,13 +25,8 @@ class SignSysModel(nn.Module):
         # Flatten the VGG features
         vgg_features = torch.flatten(vgg_features, 1)
 
-        print(f'VGG features shape: {vgg_features.shape}')
-        print(f'ResNet features shape: {resnet_features.shape}')
-
         # Concatenating the features of the CNNs
         combined_features = torch.cat((vgg_features, resnet_features), dim=1)
-
-        print(f'Combined features shape: {combined_features.shape}')
 
         x = F.relu(self.fc1(combined_features))
         x = F.relu(self.fc2(x))

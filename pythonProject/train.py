@@ -19,10 +19,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
+    update_stats_signal = pyqtSignal(int, float)
 
-    def __init__(self, stop_event):
+    def __init__(self, stop_event, total_epochs):
         super().__init__()
         self.stop_event = stop_event
+        self.total_epochs = total_epochs
         self.setWindowTitle('Sign-SYS Training Progress')
         self.setWindowIcon(QIcon('signsysweblogoturq.png'))
         self.setGeometry(850, 450, 850, 850)
@@ -30,6 +32,23 @@ class TrainingProgressWindow(qtw.QWidget):
 
         layout = qtw.QVBoxLayout()
         self.setLayout(layout)
+
+        # Stats Layout
+        stats_layout = qtw.QHBoxLayout()
+
+        self.epoch_label = qtw.QLabel('Epoch: 0/{}'.format(self.total_epochs))
+        self.epoch_label.setStyleSheet(activitystyles.text_styles)
+        stats_layout.addWidget(self.epoch_label, alignment=Qt.AlignLeft)
+
+        self.accuracy_label = qtw.QLabel('Accuracy: 0.0%')
+        self.accuracy_label.setStyleSheet(activitystyles.text_styles)
+        stats_layout.addWidget(self.accuracy_label, alignment=Qt.AlignCenter)
+
+        self.progress_bar = qtw.QProgressBar()
+        self.progress_bar.setMaximum(self.total_epochs)
+        stats_layout.addWidget(self.progress_bar, alignment=Qt.AlignRight)
+
+        layout.addLayout(stats_layout)
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
@@ -54,6 +73,7 @@ class TrainingProgressWindow(qtw.QWidget):
         self.val_epochs = []
 
         self.update_plot_signal.connect(self.update_plots)
+        self.update_stats_signal.connect(self.update_stats)
 
     def start_timer(self):
         self.start_time = 0
@@ -86,8 +106,12 @@ class TrainingProgressWindow(qtw.QWidget):
         ax2.margins(0.1)
 
         self.figure.tight_layout(pad=2.0)
-
         self.canvas.draw()
+
+    def update_stats(self, epoch, accuracy):
+        self.epoch_label.setText(f'Epoch: {epoch}/{self.total_epochs}')
+        self.accuracy_label.setText(f'Accuracy: {accuracy:.2f}%')
+        self.progress_bar.setValue(epoch)
 
     def add_data(self, epoch, train_loss, val_accuracy):
         self.epochs.append(epoch)
@@ -95,6 +119,7 @@ class TrainingProgressWindow(qtw.QWidget):
         self.training_losses.append(train_loss)
         self.validation_accuracies.append(val_accuracy)
         self.update_plot_signal.emit(self.training_losses, self.validation_accuracies, self.epochs, self.val_epochs)
+        self.update_stats_signal.emit(epoch, val_accuracy)
 
     def stop_training(self):
         logging.debug("Stopping training...")
@@ -129,13 +154,15 @@ class TrainingWindow(qtw.QWidget):
         validation_split = int(self.train_test_ratio_input.text()) / 100.0
 
         if model_name in ["AlexNet", "InceptionV3", "Sign-SYS Model"] and self.file_path:
-            logging.debug(f"Starting training with model: {model_name}, batch size: {batch_size}, epochs: {epochs}, validation split: {validation_split}")
+            logging.debug(
+                f"Starting training with model: {model_name}, batch size: {batch_size}, epochs: {epochs}, validation split: {validation_split}")
             self.stop_event = threading.Event()
-            self.progress_window = TrainingProgressWindow(self.stop_event)
+            self.progress_window = TrainingProgressWindow(self.stop_event, epochs)
             self.progress_window.show()
             self.progress_window.start_timer()
             training_thread = threading.Thread(target=train_model.train_model, args=(
-                self.file_path, epochs, batch_size, validation_split, model_name, self.progress_window, self.stop_event))
+                self.file_path, epochs, batch_size, validation_split, model_name, self.progress_window,
+                self.stop_event))
             training_thread.start()
         else:
             logging.warning("Invalid model selection or data not loaded.")
@@ -268,10 +295,14 @@ class TrainingWindow(qtw.QWidget):
         training_layout.addLayout(epochs_layout)
 
         self.train_test_ratio_slider.valueChanged.connect(
-            lambda value: self.update_slider_value(self.train_test_ratio_slider, self.train_test_ratio_slider_label, self.train_test_ratio_input, 'Train/Test Ratio', value))
+            lambda value: self.update_slider_value(self.train_test_ratio_slider, self.train_test_ratio_slider_label,
+                                                   self.train_test_ratio_input, 'Train/Test Ratio', value))
         self.batch_size_slider.valueChanged.connect(
-            lambda value: self.update_slider_value(self.batch_size_slider, self.batch_size_slider_label, self.batch_size_input, 'Batch Size', value))
-        self.epochs_slider.valueChanged.connect(lambda value: self.update_slider_value(self.epochs_slider, self.epochs_slider_label, self.epochs_input, 'Epochs', value))
+            lambda value: self.update_slider_value(self.batch_size_slider, self.batch_size_slider_label,
+                                                   self.batch_size_input, 'Batch Size', value))
+        self.epochs_slider.valueChanged.connect(
+            lambda value: self.update_slider_value(self.epochs_slider, self.epochs_slider_label, self.epochs_input,
+                                                   'Epochs', value))
 
         self.train_test_ratio_input.editingFinished.connect(
             lambda: self.update_input_value(self.train_test_ratio_input, self.train_test_ratio_slider))

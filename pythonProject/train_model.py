@@ -26,6 +26,7 @@ def load_data(filepath):
     y = data[:, 0].astype(int)
     return X, y
 
+
 def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window, stop_event):
     try:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -35,8 +36,8 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
         train_size = len(dataset) - val_size
         train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
         if model_name == "AlexNet":
             model = build_alexnet(num_classes=36)
@@ -47,7 +48,7 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
             resnet = ResNet18(num_classes=36)
             model = SignSysModel(vgg, resnet, num_classes=36)
         else:
-            raise ValueError("Unknown model name")
+            raise ValueError(f"Unknown model name: {model_name}")
 
         model.to(device)
         criterion = nn.CrossEntropyLoss()
@@ -132,8 +133,10 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
 
         model_id = str(uuid.uuid4())
         model_save_dir = 'models'
+
         os.makedirs(model_save_dir, exist_ok=True)
-        model_save_path = os.path.join(model_save_dir, f'{model_name.lower()}_{best_val_accuracy:.2f}.pth')
+
+        model_save_path = os.path.join(model_save_dir, f'{model_name.lower().replace(" ", "_")}_{best_val_accuracy:.2f}.pth')
         torch.save({
             'model_state_dict': best_model_state,
             'model_name': model_name,
@@ -145,3 +148,4 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
         logging.info(f'Model saved as {model_save_path}')
     except Exception as e:
         logging.error(f"Error during training: {e}")
+

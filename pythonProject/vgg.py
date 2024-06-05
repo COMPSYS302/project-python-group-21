@@ -20,8 +20,6 @@ class VGG16(nn.Module):
         x = F.relu(self.conv1_2(x))
         x = self.pool(x)
 
-        print(f'VGG output shape after pooling: {x.shape}')
-
         x = torch.flatten(x, 1)
         return x
 

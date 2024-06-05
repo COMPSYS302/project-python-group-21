@@ -13,6 +13,7 @@ from resnet import ResNet18
 from vgg import VGG16
 from signsysmodel import SignSysModel
 import logging
+from torch.cuda.amp import GradScaler, autocast
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,14 +28,15 @@ def load_data(filepath):
 
 def train_model(filepath, epochs, batch_size, validation_split, model_name, progress_window, stop_event):
     try:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         X, y = load_data(filepath)
         dataset = TensorDataset(torch.tensor(X), torch.tensor(y, dtype=torch.long))
         val_size = int(len(dataset) * validation_split)
         train_size = len(dataset) - val_size
         train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
         if model_name == "AlexNet":
             model = build_alexnet(num_classes=36)
@@ -47,9 +49,12 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
         else:
             raise ValueError("Unknown model name")
 
+        model.to(device)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+
+        scaler = GradScaler()
         best_val_accuracy = 0
 
         for epoch in range(epochs):
@@ -64,11 +69,24 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
                     logging.info("Training is stopped")
                     break
 
+                inputs, labels = inputs.to(device), labels.to(device)
+
                 optimizer.zero_grad()
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
+
+                if model_name in ["Sign-SYS Model"]:
+                    with autocast():
+                        outputs = model(inputs)
+                        loss = criterion(outputs, labels)
+
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+
                 running_loss += loss.item()
 
             model.eval()
@@ -81,8 +99,16 @@ def train_model(filepath, epochs, batch_size, validation_split, model_name, prog
                         logging.info("Training is stopped")
                         break
 
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                    inputs, labels = inputs.to(device), labels.to(device)
+
+                    if model_name in ["Sign-SYS Model"]:
+                        with autocast():
+                            outputs = model(inputs)
+                            loss = criterion(outputs, labels)
+                    else:
+                        outputs = model(inputs)
+                        loss = criterion(outputs, labels)
+
                     val_loss += loss.item()
                     _, predicted = torch.max(outputs, 1)
                     total += labels.size(0)

@@ -399,6 +399,23 @@ class ActivityOptionsWindow(qtw.QWidget):
             msg.exec_()
             return
 
+        # Clear previous search bar and scroll area if they exist
+        if hasattr(self, 'search_bar') and self.search_bar:
+            self.search_bar.deleteLater()
+            self.search_bar = None
+
+        if hasattr(self, 'scroll_area') and self.scroll_area:
+            self.scroll_area.deleteLater()
+            self.scroll_area = None
+
+        self.search_bar = qtw.QLineEdit(self)
+        self.search_bar.setPlaceholderText("Search by label")
+        self.search_bar.textChanged.connect(self.filterImages)
+        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
+
+        self.layout().insertWidget(1, self.search_bar)
+
+        # Create new scroll area and image display layout
         self.image_display_layout = qtw.QGridLayout()
         self.scroll_area = qtw.QScrollArea()
         scroll_images_widget = qtw.QWidget()
@@ -410,21 +427,9 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFixedHeight(400)
 
-        if hasattr(self, 'scroll_area_widget'):
-            self.layout().replaceWidget(self.scroll_area_widget, self.scroll_area)
-            self.scroll_area_widget.deleteLater()
-        else:
-            self.layout().addWidget(self.scroll_area)
+        self.layout().addWidget(self.scroll_area)
 
-        self.scroll_area_widget = self.scroll_area
         self.scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
-
-        self.search_bar = qtw.QLineEdit(self)
-        self.search_bar.setPlaceholderText("Search by label")
-        self.search_bar.textChanged.connect(self.filterImages)
-        self.search_bar.setStyleSheet(activitystyles.line_edit_style)
-
-        self.layout().insertWidget(1, self.search_bar)
 
     def filterImages(self):
         query = self.search_bar.text()

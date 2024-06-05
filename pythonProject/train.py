@@ -1,4 +1,3 @@
-# train.py
 import sys
 import PyQt5.QtWidgets as qtw
 from PyQt5.QtGui import QIcon
@@ -15,7 +14,6 @@ trainingstyles = TrainingStyles()
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class TrainingProgressWindow(qtw.QWidget):
     update_plot_signal = pyqtSignal(list, list, list, list)
@@ -36,28 +34,34 @@ class TrainingProgressWindow(qtw.QWidget):
         # Stats Layout
         stats_layout = qtw.QHBoxLayout()
 
+        # Epoch label
         self.epoch_label = qtw.QLabel('Epoch: 0/{}'.format(self.total_epochs))
         self.epoch_label.setStyleSheet(activitystyles.text_styles)
         stats_layout.addWidget(self.epoch_label, alignment=Qt.AlignLeft)
 
+        # Accuracy label
         self.accuracy_label = qtw.QLabel('Accuracy: 0.0%')
         self.accuracy_label.setStyleSheet(activitystyles.text_styles)
         stats_layout.addWidget(self.accuracy_label, alignment=Qt.AlignCenter)
 
+        # Progress bar
         self.progress_bar = qtw.QProgressBar()
         self.progress_bar.setMaximum(self.total_epochs)
         stats_layout.addWidget(self.progress_bar, alignment=Qt.AlignRight)
 
         layout.addLayout(stats_layout)
 
+        # Matplotlib figure and canvas for plots
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
+        # Timer label
         self.timer_label = qtw.QLabel('Time elapsed: 00:00:00')
         self.timer_label.setStyleSheet(activitystyles.text_styles)
         layout.addWidget(self.timer_label, alignment=Qt.AlignCenter)
 
+        # Stop training button
         self.stop_btn = qtw.QPushButton('Stop Training')
         self.stop_btn.setStyleSheet(activitystyles.button_style)
         self.stop_btn.clicked.connect(self.stop_training)
@@ -76,19 +80,23 @@ class TrainingProgressWindow(qtw.QWidget):
         self.update_stats_signal.connect(self.update_stats)
 
     def start_timer(self):
+        # Start the timer
         self.start_time = 0
         self.timer.start(1000)
 
     def stop_timer(self):
+        # Stop the timer
         self.timer.stop()
 
     def update_timer(self):
+        # Update the timer label
         self.start_time += 1
         hours, remainder = divmod(self.start_time, 3600)
         minutes, seconds = divmod(remainder, 60)
         self.timer_label.setText(f'Time elapsed: {hours:02}:{minutes:02}:{seconds:02}')
 
     def update_plots(self, training_losses, validation_accuracies, epochs, val_epochs):
+        # Update the plots for training losses and validation accuracies
         self.figure.clear()
 
         ax1 = self.figure.add_subplot(211)
@@ -109,11 +117,13 @@ class TrainingProgressWindow(qtw.QWidget):
         self.canvas.draw()
 
     def update_stats(self, epoch, accuracy):
+        # Update the epoch and accuracy labels and progress bar
         self.epoch_label.setText(f'Epoch: {epoch}/{self.total_epochs}')
         self.accuracy_label.setText(f'Accuracy: {accuracy:.2f}%')
         self.progress_bar.setValue(epoch)
 
     def add_data(self, epoch, train_loss, val_accuracy):
+        # Add data for plots and stats
         self.epochs.append(epoch)
         self.val_epochs.append(epoch)
         self.training_losses.append(train_loss)
@@ -122,12 +132,14 @@ class TrainingProgressWindow(qtw.QWidget):
         self.update_stats_signal.emit(epoch, val_accuracy)
 
     def stop_training(self):
+        # Stop training process
         logging.debug("Stopping training...")
         self.stop_event.set()
         self.stop_timer()
         self.close()
 
     def closeEvent(self, event):
+        # Handle the window close event
         logging.debug("Closing training progress window...")
         self.stop_training()
         super().closeEvent(event)
@@ -138,16 +150,19 @@ class CenterDropdownDelegate(qtw.QStyledItemDelegate):
         super(CenterDropdownDelegate, self).__init__(parent)
 
     def initStyleOption(self, option, index):
+        # Center the dropdown items
         super(CenterDropdownDelegate, self).initStyleOption(option, index)
         option.displayAlignment = Qt.AlignCenter
 
 
 class TrainingWindow(qtw.QWidget):
     def returnToActivity(self):
+        # Return to the previous window
         self.prev_window.show()
         self.close()
 
     def startTraining(self):
+        # Start the training process
         model_name = self.cnn_dropdown.currentText()
         batch_size = int(self.batch_size_input.text())
         epochs = int(self.epochs_input.text())
@@ -181,13 +196,16 @@ class TrainingWindow(qtw.QWidget):
         training_layout = qtw.QVBoxLayout()
         self.setLayout(training_layout)
 
+        # Button layout
         button_layout = qtw.QHBoxLayout()
 
+        # Return button
         self.return_btn = qtw.QPushButton('Return')
         self.return_btn.setStyleSheet(activitystyles.button_style)
         self.return_btn.clicked.connect(self.returnToActivity)
         button_layout.addWidget(self.return_btn, alignment=Qt.AlignLeft)
 
+        # Start training button
         self.train_btn = qtw.QPushButton('Start Training')
         self.train_btn.setStyleSheet(activitystyles.button_style)
         self.train_btn.clicked.connect(self.startTraining)
@@ -196,12 +214,14 @@ class TrainingWindow(qtw.QWidget):
         top_layout = qtw.QVBoxLayout()
         top_layout.addLayout(button_layout)
 
+        # Model selection label
         self.model_select = qtw.QLabel("Select model to train")
         self.model_select.setStyleSheet(trainingstyles.title_styles)
         top_layout.addWidget(self.model_select, alignment=Qt.AlignCenter)
 
         training_layout.addLayout(top_layout)
 
+        # Model selection dropdown
         self.cnn_dropdown = qtw.QComboBox()
         self.cnn_dropdown.addItems(["-- Select Model --", "AlexNet", "InceptionV3", "Sign-SYS Model"])
         self.cnn_dropdown.setStyleSheet(trainingstyles.combobox_style)
@@ -216,6 +236,7 @@ class TrainingWindow(qtw.QWidget):
 
         validation_layout = qtw.QVBoxLayout()
 
+        # Train/Test ratio slider
         self.train_test_ratio_slider = qtw.QSlider(Qt.Horizontal)
         self.train_test_ratio_slider.setStyleSheet(trainingstyles.slider_styles)
         self.train_test_ratio_slider.setMinimum(1)
@@ -225,6 +246,7 @@ class TrainingWindow(qtw.QWidget):
         self.train_test_ratio_slider.setTickInterval(10)
         self.train_test_ratio_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
 
+        # Train/Test ratio label and input
         self.train_test_ratio_slider_label = qtw.QLabel(f'Train/Test Ratio: '
                                                         f'{self.train_test_ratio_slider.value()}%', self)
         self.train_test_ratio_slider_label.setStyleSheet(trainingstyles.label_styles)
@@ -245,6 +267,7 @@ class TrainingWindow(qtw.QWidget):
 
         batchsize_layout = qtw.QVBoxLayout()
 
+        # Batch size slider
         self.batch_size_slider = qtw.QSlider(Qt.Horizontal)
         self.batch_size_slider.setStyleSheet(trainingstyles.slider_styles)
         self.batch_size_slider.setMinimum(1)
@@ -254,6 +277,7 @@ class TrainingWindow(qtw.QWidget):
         self.batch_size_slider.setTickInterval(32)
         self.batch_size_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
 
+        # Batch size label and input
         self.batch_size_slider_label = qtw.QLabel(f'Batch Size: {self.batch_size_slider.value()}', self)
         self.batch_size_slider_label.setStyleSheet(trainingstyles.label_styles)
         self.batch_size_input = qtw.QLineEdit()
@@ -273,6 +297,7 @@ class TrainingWindow(qtw.QWidget):
 
         epochs_layout = qtw.QVBoxLayout()
 
+        # Epochs slider
         self.epochs_slider = qtw.QSlider(Qt.Horizontal)
         self.epochs_slider.setStyleSheet(trainingstyles.slider_styles)
         self.epochs_slider.setMinimum(1)
@@ -282,6 +307,7 @@ class TrainingWindow(qtw.QWidget):
         self.epochs_slider.setTickInterval(10)
         self.epochs_slider.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Fixed)
 
+        # Epochs label and input
         self.epochs_slider_label = qtw.QLabel(f'Epochs: {self.epochs_slider.value()}', self)
         self.epochs_slider_label.setStyleSheet(trainingstyles.label_styles)
         self.epochs_input = qtw.QLineEdit()
@@ -294,6 +320,7 @@ class TrainingWindow(qtw.QWidget):
 
         training_layout.addLayout(epochs_layout)
 
+        # Connect slider and input value changes
         self.train_test_ratio_slider.valueChanged.connect(
             lambda value: self.update_slider_value(self.train_test_ratio_slider, self.train_test_ratio_slider_label,
                                                    self.train_test_ratio_input, 'Train/Test Ratio', value))
@@ -304,6 +331,7 @@ class TrainingWindow(qtw.QWidget):
             lambda value: self.update_slider_value(self.epochs_slider, self.epochs_slider_label, self.epochs_input,
                                                    'Epochs', value))
 
+        # Connect input editing finished events
         self.train_test_ratio_input.editingFinished.connect(
             lambda: self.update_input_value(self.train_test_ratio_input, self.train_test_ratio_slider))
         self.batch_size_input.editingFinished.connect(
@@ -312,10 +340,12 @@ class TrainingWindow(qtw.QWidget):
             lambda: self.update_input_value(self.epochs_input, self.epochs_slider))
 
     def update_slider_value(self, slider, label, input, label_text, value):
+        # Update slider label and input value
         label.setText(f'{label_text}: {value}')
         input.setText(str(value))
 
     def update_input_value(self, input, slider):
+        # Update slider value based on input value
         try:
             value = int(input.text())
             slider.setValue(value)

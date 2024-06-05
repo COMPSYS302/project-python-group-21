@@ -26,6 +26,7 @@ activitystyles = ActivityStyles()
 IMAGES_BATCH_SIZE = 100
 INITIAL_LOAD_SIZE = 200
 
+# Map specific label values to new values
 label_remap = {
     26: 35,
     27: 26,
@@ -39,125 +40,150 @@ label_remap = {
     35: 31
 }
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure the logging settings
+# Set the logging level to DEBUG to capture all levels of log messages
+# Set the log message format to include the timestamp, log level, and message
+logging.basicConfig(
+    level=logging.DEBUG,  # Capture all log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Format log messages to include timestamp, level, and message
+)
 
+
+# A thread class that loads data from a CSV file, processes each image, and emits progress updates and estimated time remaining.
+# It reads the data, processes each row, and emits the processed images when done.
 class DataLoaderThread(QThread):
-    progress = pyqtSignal(int)
-    data_loaded = pyqtSignal(list)
-    time_remaining = pyqtSignal(str)
+    # Define custom signals
+    progress = pyqtSignal(int)  # Signal to emit progress as an integer percentage
+    data_loaded = pyqtSignal(list)  # Signal to emit the loaded data as a list
+    time_remaining = pyqtSignal(str)  # Signal to emit the estimated time remaining as a string
 
     def __init__(self, filepath):
         super().__init__()
-        self.filepath = filepath
-        self.start_time = None
-        self.mutex = QMutex()
-        self.stopped = False
+        self.filepath = filepath  # Path to the CSV file to load data from
+        self.start_time = None  # To keep track of the start time for progress estimation
+        self.mutex = QMutex()  # Mutex to handle thread safety
+        self.stopped = False  # Flag to check if the thread is stopped
 
+    # The main function that runs in the thread
     def run(self):
-        self.start_time = time.time()
+        self.start_time = time.time()  # Record the start time
         try:
-            data = pd.read_csv(self.filepath)
+            data = pd.read_csv(self.filepath)  # Read the CSV file
         except Exception as e:
-            logging.error(f"Error reading CSV file: {e}")
+            logging.error(f"Error reading CSV file: {e}")  # Log an error if the file cannot be read
             return
 
-        images = []
-        progress_num = len(data)
+        images = []  # List to store the processed images
+        progress_num = len(data)  # Total number of rows in the data
 
         for i in range(progress_num):
-            with QMutexLocker(self.mutex):
+            with QMutexLocker(self.mutex):  # Lock the mutex to check the stopped flag safely
                 if self.stopped:
                     break
 
             try:
-                label = data.iloc[i, 0]
-                label = label_remap.get(label, label)
+                label = data.iloc[i, 0]  # Get the label from the first column
+                label = label_remap.get(label, label)  # Remap the label if necessary
 
-                pixels = data.iloc[i, 1:].values
-                image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))
-                qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)
-                images.append((label, QPixmap.fromImage(qimage), image_array))
-                self.progress.emit(int((i + 1) / progress_num * 100))
+                pixels = data.iloc[i, 1:].values  # Get the pixel values from the remaining columns
+                image_array = np.array(pixels, dtype=np.uint8).reshape((28, 28))  # Reshape into a 28x28 array
+                qimage = QImage(image_array.data, 28, 28, QImage.Format_Grayscale8)  # Create a QImage from the array
+                images.append((label, QPixmap.fromImage(qimage), image_array))  # Add the label, QPixmap, and array to the list
+                self.progress.emit(int((i + 1) / progress_num * 100))  # Emit the progress percentage
 
-                elapsed_time = time.time() - self.start_time
+                elapsed_time = time.time() - self.start_time  # Calculate elapsed time
                 if i > 0:
-                    remaining_time = elapsed_time / (i + 1) * (progress_num - i - 1)
-                    minutes, seconds = divmod(remaining_time, 60)
-                    self.time_remaining.emit(f"{int(minutes)} min {int(seconds)} sec left")
+                    remaining_time = elapsed_time / (i + 1) * (progress_num - i - 1)  # Estimate remaining time
+                    minutes, seconds = divmod(remaining_time, 60)  # Convert to minutes and seconds
+                    self.time_remaining.emit(f"{int(minutes)} min {int(seconds)} sec left")  # Emit the remaining time
             except Exception as e:
-                logging.error(f"Error processing row {i}: {e}")
+                logging.error(f"Error processing row {i}: {e}")  # Log an error if processing the row fails
                 continue
 
         if not self.stopped:
-            self.data_loaded.emit(images)
+            self.data_loaded.emit(images)  # Emit the loaded data if the thread was not stopped
 
+    # Function to stop the thread
     def stop(self):
-        with QMutexLocker(self.mutex):
+        with QMutexLocker(self.mutex):  # Lock the mutex to set the stopped flag safely
             self.stopped = True
 
+# A window to display the prediction probabilities for a selected image.
+# It shows the image, predicted label, and a bar chart of the probabilities.
 class ProbabilityWindow(qtw.QWidget):
     def __init__(self, probabilities, predicted_label, pixmap):
         super().__init__()
-        self.setWindowTitle("Prediction Probabilities")
-        self.setWindowIcon(QIcon('signsysweblogoturq.png'))
-        self.setGeometry(100, 100, 800, 750)  # X Y Width Height
-        self.setStyleSheet("background-color: #8C52FF;")
-        layout = qtw.QVBoxLayout()
-        self.setLayout(layout)
+        self.setWindowTitle("Prediction Probabilities")  # Set the window title
+        self.setWindowIcon(QIcon('signsysweblogoturq.png'))  # Set the window icon
+        self.setGeometry(100, 100, 800, 750)  # Set the window geometry: X Y Width Height
+        self.setStyleSheet("background-color: #8C52FF;")  # Set the background color of the window
+        layout = qtw.QVBoxLayout()  # Create a vertical box layout
+        self.setLayout(layout)  # Set the layout for this widget
 
         # Display the clicked image zoomed in
-        image_label = qtw.QLabel()
-        image_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio))
-        layout.addWidget(image_label, alignment=Qt.AlignCenter)
+        image_label = qtw.QLabel()  # Create a QLabel for the image
+        image_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio))  # Set the pixmap and scale it
+        layout.addWidget(image_label, alignment=Qt.AlignCenter)  # Add the image label to the layout
 
         # Display the predicted label
-        label = qtw.QLabel(f"Predicted Label: {predicted_label}")
-        label.setStyleSheet(activitystyles.regular_text)
-        label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(label)
+        label = qtw.QLabel(f"Predicted Label: {predicted_label}")  # Create a QLabel for the predicted label
+        label.setStyleSheet(activitystyles.regular_text)  # Apply stylesheet for text styling
+        label.setAlignment(Qt.AlignCenter)  # Center-align the text
+        layout.addWidget(label)  # Add the label to the layout
 
         # Plotting the probabilities
-        figure, ax = plt.subplots()
-        ax.bar(range(len(probabilities)), probabilities)
-        ax.set_xlabel('Class')
-        ax.set_ylabel('Probability')
-        ax.grid(True)
+        figure, ax = plt.subplots()  # Create a new matplotlib figure and axes
+        ax.bar(range(len(probabilities)), probabilities)  # Create a bar plot for the probabilities
+        ax.set_xlabel('Class')  # Set the x-axis label
+        ax.set_ylabel('Probability')  # Set the y-axis label
+        ax.grid(True)  # Enable the grid
 
-        canvas = FigureCanvas(figure)
-        layout.addWidget(canvas)
+        canvas = FigureCanvas(figure)  # Create a canvas to display the matplotlib figure
+        layout.addWidget(canvas)  # Add the canvas to the layout
 
+
+# A custom QLabel that can be clicked to predict the label of the associated image using a model.
+# It shows the ProbabilityWindow with the prediction results.
 class ClickableLabel(qtw.QLabel):
     def __init__(self, label, pixmap, image_array, model, model_name):
         super().__init__()
-        self.label = label
-        self.setPixmap(pixmap)
-        self.image_array = image_array
-        self.model = model
-        self.model_name = model_name
-        self.pixmap = pixmap
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.label = label  # The label (class) of the image
+        self.setPixmap(pixmap)  # Display the image
+        self.image_array = image_array  # The image data as a NumPy array
+        self.model = model  # The model used for prediction
+        self.model_name = model_name  # The name of the model
+        self.pixmap = pixmap  # The QPixmap object of the image
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Determine the device (GPU or CPU)
         self.model.to(self.device)  # Ensure the model is on the correct device
 
+    # Event handler for mouse press events
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.predict_and_show()
+            self.predict_and_show()  # Predict and show the results when left mouse button is clicked
 
+    # Function to predict the label of the image and show the probabilities
     def predict_and_show(self):
         try:
-            self.model.eval()
-            with torch.no_grad():
-                image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float().to(self.device)  # Move tensor to device
-                output = self.model(image_tensor)
-                probabilities = F.softmax(output, dim=1).cpu().numpy().flatten()  # Move output to CPU before converting to numpy
-                _, predicted = torch.max(output, 1)
+            self.model.eval()  # Set the model to evaluation mode
+            with torch.no_grad():  # Disable gradient calculation for prediction
+                # Convert the image array to a tensor, add batch and channel dimensions, and move to the correct device
+                image_tensor = torch.tensor(self.image_array).unsqueeze(0).unsqueeze(0).float().to(self.device)
+                output = self.model(image_tensor)  # Perform the forward pass to get the model's output
+                probabilities = F.softmax(output, dim=1).cpu().numpy().flatten()  # Apply softmax and move output to CPU
+                _, predicted = torch.max(output, 1)  # Get the predicted label
                 predicted_label = predicted.item()
 
+            # Create and show the ProbabilityWindow with the prediction results
             self.prob_window = ProbabilityWindow(probabilities, predicted_label, self.pixmap)
             self.prob_window.show()
 
         except Exception as e:
+            # Show an error message if prediction fails
             qtw.QMessageBox.critical(self, "Error", f"Failed to predict: {str(e)}")
 
+
+# A window to display images and allow users to test a model's predictions.
+# It supports filtering images by predicted label and navigating through pages of images.
 class TestModelWindow(qtw.QWidget):
     def __init__(self, images, model, model_name):
         super().__init__()
@@ -242,16 +268,19 @@ class TestModelWindow(qtw.QWidget):
             self.image_display_layout.addWidget(label_widget, (i - start_index) // 10, (i - start_index) % 10)
 
     def prev_page(self):
+        # Go to the previous page of images
         if self.current_page > 0:
             self.current_page -= 1
             self.display_images()
 
     def next_page(self):
+        # Go to the next page of images
         if self.current_page < (len(self.filtered_images) + self.page_size - 1) // self.page_size - 1:
             self.current_page += 1
             self.display_images()
 
     def filter_images(self):
+        # Filter images based on the search query
         query = self.search_bar.text()
         if query.isdigit():
             predicted_label = int(query)
@@ -262,6 +291,7 @@ class TestModelWindow(qtw.QWidget):
         self.display_images()
 
     def eventFilter(self, obj, event):
+        # Change camera button icon on hover
         if obj == self.camera_button:
             if event.type() == qtc.QEvent.Enter:
                 self.camera_button.setIcon(self.white_cam_icon)
@@ -270,10 +300,15 @@ class TestModelWindow(qtw.QWidget):
         return super().eventFilter(obj, event)
 
     def open_camera(self):
+        # Open the camera for live image capture and prediction
         camera_handler = CameraHandler(self.model)
         camera_handler.open_camera()
 
+
+# The main window that provides options to load data, view data, train a model, and test a model.
+# It manages the loading of data and the transition to other windows for training and testing.
 class ActivityOptionsWindow(qtw.QWidget):
+    # Function to return to the home window, clearing loaded data if confirmed
     def returnToHome(self):
         msg = qtw.QMessageBox(self)
         msg.setWindowTitle("Return to Home")
@@ -294,6 +329,7 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.prevWindow.show()
             self.close()
 
+    # Function to open the training window if data is loaded
     def openTrainingWindow(self):
         if not self.images:
             msg = qtw.QMessageBox(self)
@@ -307,6 +343,7 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.training_window.show()
             self.hide()
 
+    # Function to open the file dialog to select a model file for testing
     def openTestModelWindow(self):
         fname, _ = qtw.QFileDialog.getOpenFileName(self, "Open Model File",
                                                    "C:\\Users\\Harsh\\OneDrive\\Documents\\Android studip\\project-python-group-21\\pythonProject\\Models",
@@ -315,6 +352,7 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.model_path = fname
             self.loadAndTestModel(self.model_path)
 
+    # Function to load and test the selected model
     def loadAndTestModel(self, model_path):
         try:
             model_info = torch.load(model_path, map_location=self.device)  # Load to CPU first
@@ -352,6 +390,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         except Exception as e:
             qtw.QMessageBox.critical(self, "Error", f"Failed to load the model: {str(e)}")
 
+    # Function to open the test model window with images
     def openTestModelWindowWithImages(self, model, model_name):
         if not self.images:
             qtw.QMessageBox.warning(self, "Warning", "No data loaded. Please load data first.")
@@ -360,6 +399,7 @@ class ActivityOptionsWindow(qtw.QWidget):
         self.test_model_window = TestModelWindow(self.images, model, model_name)
         self.test_model_window.show()
 
+    # Function to open the file dialog to select a CSV file to load data
     def loadFile(self):
         fname, _ = qtw.QFileDialog.getOpenFileName(self, "Open File", "", "CSV Files (*.csv);;All Files (*)")
         if fname:
@@ -374,12 +414,15 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.loadingProgressBar.show()
             self.stopButton.show()
 
+    # Function to update the progress bar value
     def updateProgressBar(self, value):
         self.loadingProgressBar.setValue(value)
 
+    # Function to update the time remaining on the progress bar
     def updateTimeRemaining(self, time_left):
         self.loadingProgressBar.setFormat(f"%p% - {time_left}")
 
+    # Function to handle data loaded event
     def onDataLoaded(self, images):
         self.images = images
         self.filtered_images = images[:INITIAL_LOAD_SIZE]
@@ -394,12 +437,14 @@ class ActivityOptionsWindow(qtw.QWidget):
         msg.setStyleSheet(activitystyles.msg_box_design)
         msg.exec_()
 
+    # Function to stop loading data
     def stopLoading(self):
         if hasattr(self, 'loading_thread'):
             self.loading_thread.stop()
             self.loadingProgressBar.hide()
             self.stopButton.hide()
 
+    # Function to view the converted images
     def viewConvertedImages(self, model=None, model_name=None):
         if not self.images:
             msg = qtw.QMessageBox(self)
@@ -442,6 +487,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.scroll_area.verticalScrollBar().valueChanged.connect(self.loadMoreImages)
 
+    # Function to filter images based on the search query
     def filterImages(self):
         query = self.search_bar.text()
         if query.isdigit():
@@ -472,6 +518,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.viewFilteredImages()
 
+    # Function to view filtered images
     def viewFilteredImages(self):
         self.image_display_layout = qtw.QGridLayout()
         scroll_images_widget = qtw.QWidget()
@@ -481,6 +528,7 @@ class ActivityOptionsWindow(qtw.QWidget):
 
         self.scroll_area.setWidget(scroll_images_widget)
 
+    # Function to load more images when the user scrolls to the bottom
     def loadMoreImages(self):
         if self.scroll_area.verticalScrollBar().value() == self.scroll_area.verticalScrollBar().maximum():
             next_images = self.filtered_images[
@@ -491,6 +539,7 @@ class ActivityOptionsWindow(qtw.QWidget):
             self.displayed_images_count += len(next_images)
             self.updateImageDisplay(self.filtered_images, self.model, self.model_name, append=True)
 
+    # Function to update the image display
     def updateImageDisplay(self, images, model=None, model_name=None, append=False):
         if not append:
             if hasattr(self, 'image_display_layout'):
